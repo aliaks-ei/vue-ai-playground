@@ -1,26 +1,35 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import type { City, ForecastDay, WeatherEntry, WeatherSuccessState } from '../lib/types'
 
-const props = defineProps({
-  open: {
-    type: Boolean,
-    default: false,
-  },
-  city: {
-    type: Object,
-    default: null,
-  },
-  weather: {
-    type: Object,
-    default: null,
-  },
+interface Props {
+  open?: boolean
+  city?: City | null
+  weather?: WeatherEntry | null
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  open: false,
+  city: null,
+  weather: null,
 })
 
-const emit = defineEmits(['close', 'retry'])
+const emit = defineEmits<{
+  close: []
+  retry: []
+}>()
 
-const forecastDays = computed(() => props.weather?.daily ?? [])
+const successWeather = computed<WeatherSuccessState | null>(() =>
+  props.weather?.status === 'success' ? props.weather : null,
+)
 
-function formatTemperature(value) {
+const weatherError = computed(() =>
+  props.weather?.status === 'error' ? props.weather.error : 'Unable to load weather.',
+)
+
+const forecastDays = computed<ForecastDay[]>(() => successWeather.value?.daily ?? [])
+
+function formatTemperature(value: number | null | undefined): string {
   if (typeof value !== 'number') {
     return '--'
   }
@@ -28,7 +37,7 @@ function formatTemperature(value) {
   return `${Math.round(value)}°C`
 }
 
-function formatDate(dateString) {
+function formatDate(dateString: string): string {
   const normalizedDate = `${dateString}T12:00:00`
 
   return new Intl.DateTimeFormat('en-US', {
@@ -78,7 +87,7 @@ function formatDate(dateString) {
             v-else-if="weather?.status === 'error'"
             class="city-drawer__state city-drawer__state--error"
           >
-            <p>{{ weather.error }}</p>
+            <p>{{ weatherError }}</p>
             <button
               class="city-drawer__retry"
               type="button"
@@ -96,9 +105,9 @@ function formatDate(dateString) {
               <div>
                 <p class="city-drawer__label">Current weather</p>
                 <p class="city-drawer__temperature">
-                  {{ formatTemperature(weather.current?.temperature) }}
+                  {{ formatTemperature(successWeather?.current.temperature) }}
                 </p>
-                <p class="city-drawer__condition">{{ weather.current?.condition }}</p>
+                <p class="city-drawer__condition">{{ successWeather?.current.condition }}</p>
               </div>
 
               <div class="city-drawer__summary">

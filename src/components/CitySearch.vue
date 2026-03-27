@@ -1,36 +1,40 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { searchCities } from '../lib/openMeteo.js'
-import { getCityKey } from '../lib/storage.js'
+import { searchCities } from '../lib/openMeteo'
+import { getCityKey } from '../lib/storage'
+import type { City } from '../lib/types'
 
-const props = defineProps({
-  savedCityKeys: {
-    type: Array,
-    default: () => [],
-  },
+interface Props {
+  savedCityKeys?: string[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  savedCityKeys: () => [],
 })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits<{
+  select: [city: City]
+}>()
 
 const query = ref('')
-const results = ref([])
+const results = ref<City[]>([])
 const loading = ref(false)
 const error = ref('')
 const hasSearched = ref(false)
-const searchRoot = ref(null)
+const searchRoot = ref<HTMLDivElement | null>(null)
 
-let debounceId = null
+let debounceId: ReturnType<typeof window.setTimeout> | undefined
 let activeRequest = 0
 
 const showResults = computed(
   () => loading.value || error.value || results.value.length > 0 || hasSearched.value,
 )
 
-function isSaved(city) {
+function isSaved(city: City): boolean {
   return props.savedCityKeys.includes(getCityKey(city))
 }
 
-async function runSearch(rawQuery) {
+async function runSearch(rawQuery: string): Promise<void> {
   const trimmedQuery = rawQuery.trim()
 
   if (trimmedQuery.length < 2) {
@@ -54,7 +58,7 @@ async function runSearch(rawQuery) {
 
     results.value = nextResults
     hasSearched.value = true
-  } catch (requestError) {
+  } catch (requestError: unknown) {
     if (requestId !== activeRequest) {
       return
     }
@@ -72,14 +76,14 @@ async function runSearch(rawQuery) {
   }
 }
 
-function scheduleSearch(value) {
+function scheduleSearch(value: string): void {
   window.clearTimeout(debounceId)
   debounceId = window.setTimeout(() => {
-    runSearch(value)
+    void runSearch(value)
   }, 300)
 }
 
-function selectCity(city) {
+function selectCity(city: City): void {
   if (isSaved(city)) {
     return
   }
@@ -91,7 +95,11 @@ function selectCity(city) {
   hasSearched.value = false
 }
 
-function handleDocumentClick(event) {
+function handleDocumentClick(event: MouseEvent): void {
+  if (!(event.target instanceof Node)) {
+    return
+  }
+
   if (!searchRoot.value?.contains(event.target)) {
     results.value = []
     error.value = ''

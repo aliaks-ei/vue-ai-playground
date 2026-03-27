@@ -1,4 +1,4 @@
-const WEATHER_LABELS = {
+const WEATHER_LABELS: Record<number, string> = {
   0: 'Clear sky',
   1: 'Mainly clear',
   2: 'Partly cloudy',
@@ -29,7 +29,7 @@ const WEATHER_LABELS = {
   99: 'Thunderstorm with heavy hail',
 }
 
-export function getWeatherLabel(code) {
+export function getWeatherLabel(code: number | null | undefined): string {
   if (typeof code !== 'number') {
     return 'Weather unavailable'
   }

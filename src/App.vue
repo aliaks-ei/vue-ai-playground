@@ -1,16 +1,21 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import CityDetailsDrawer from './components/CityDetailsDrawer.vue'
 import CitySearch from './components/CitySearch.vue'
 import SavedCityCard from './components/SavedCityCard.vue'
-import { fetchCityWeather } from './lib/openMeteo.js'
-import { getCityKey, loadSavedCities, saveCities } from './lib/storage.js'
+import { fetchCityWeather } from './lib/openMeteo'
+import { getCityKey, loadSavedCities, saveCities } from './lib/storage'
+import type { City, WeatherEntry } from './lib/types'
 
-const savedCities = ref([])
-const weatherByCity = ref({})
-const selectedCityKey = ref(null)
+type MessageTone = 'info' | 'warning'
+
+const idleWeatherEntry: WeatherEntry = { status: 'idle' }
+
+const savedCities = ref<City[]>([])
+const weatherByCity = ref<Record<string, WeatherEntry>>({})
+const selectedCityKey = ref<string | null>(null)
 const appMessage = ref('')
-const appMessageTone = ref('info')
+const appMessageTone = ref<MessageTone>('info')
 
 const savedCityKeys = computed(() =>
   savedCities.value.map((city) => getCityKey(city)),
@@ -27,36 +32,40 @@ const selectedWeather = computed(() => {
     return null
   }
 
-  return weatherByCity.value[getCityKey(selectedCity.value)] ?? { status: 'idle' }
+  return weatherByCity.value[getCityKey(selectedCity.value)] ?? idleWeatherEntry
 })
 
-function setMessage(message, tone = 'info') {
+function setMessage(message: string, tone: MessageTone = 'info'): void {
   appMessage.value = message
   appMessageTone.value = tone
 }
 
-function clearMessage() {
+function clearMessage(): void {
   appMessage.value = ''
 }
 
-function updateWeatherEntry(cityKey, nextState) {
+function updateWeatherEntry(cityKey: string, nextState: WeatherEntry): void {
   weatherByCity.value = {
     ...weatherByCity.value,
     [cityKey]: nextState,
   }
 }
 
-function removeWeatherEntry(cityKey) {
+function removeWeatherEntry(cityKey: string): void {
   const nextEntries = { ...weatherByCity.value }
   delete nextEntries[cityKey]
   weatherByCity.value = nextEntries
 }
 
-function hasSavedCity(cityKey) {
+function hasSavedCity(cityKey: string): boolean {
   return savedCities.value.some((city) => getCityKey(city) === cityKey)
 }
 
-async function loadWeatherForCity(city) {
+function getWeatherEntry(city: City): WeatherEntry {
+  return weatherByCity.value[getCityKey(city)] ?? idleWeatherEntry
+}
+
+async function loadWeatherForCity(city: City): Promise<void> {
   const cityKey = getCityKey(city)
 
   updateWeatherEntry(cityKey, { status: 'loading' })
@@ -72,7 +81,7 @@ async function loadWeatherForCity(city) {
       status: 'success',
       ...weather,
     })
-  } catch (error) {
+  } catch (error: unknown) {
     if (!hasSavedCity(cityKey)) {
       return
     }
@@ -84,7 +93,7 @@ async function loadWeatherForCity(city) {
   }
 }
 
-async function addCity(city) {
+async function addCity(city: City): Promise<void> {
   clearMessage()
 
   const cityKey = getCityKey(city)
@@ -99,7 +108,7 @@ async function addCity(city) {
   await loadWeatherForCity(city)
 }
 
-function removeCity(city) {
+function removeCity(city: City): void {
   const cityKey = getCityKey(city)
 
   savedCities.value = savedCities.value.filter(
@@ -115,20 +124,26 @@ function removeCity(city) {
   clearMessage()
 }
 
-function openDetails(city) {
+function openDetails(city: City): void {
   selectedCityKey.value = getCityKey(city)
 }
 
-function closeDetails() {
+function closeDetails(): void {
   selectedCityKey.value = null
 }
 
-function retryCity(city) {
+function retryCity(city: City): void {
   clearMessage()
-  loadWeatherForCity(city)
+  void loadWeatherForCity(city)
 }
 
-async function restoreCities() {
+function retrySelectedCity(): void {
+  if (selectedCity.value) {
+    retryCity(selectedCity.value)
+  }
+}
+
+async function restoreCities(): Promise<void> {
   const restoredCities = loadSavedCities()
   savedCities.value = restoredCities
 
@@ -140,7 +155,7 @@ async function restoreCities() {
 }
 
 onMounted(() => {
-  restoreCities()
+  void restoreCities()
 })
 </script>
 
@@ -205,7 +220,7 @@ onMounted(() => {
           v-for="city in savedCities"
           :key="getCityKey(city)"
           :city="city"
-          :weather="weatherByCity[getCityKey(city)] ?? { status: 'idle' }"
+          :weather="getWeatherEntry(city)"
           @details="openDetails(city)"
           @remove="removeCity(city)"
           @retry="retryCity(city)"
@@ -218,7 +233,7 @@ onMounted(() => {
       :city="selectedCity"
       :weather="selectedWeather"
       @close="closeDetails"
-      @retry="selectedCity && retryCity(selectedCity)"
+      @retry="retrySelectedCity"
     />
   </div>
 </template>

@@ -1,6 +1,8 @@
+import type { City } from './types'
+
 const STORAGE_KEY = 'saved-cities-weather-dashboard:cities'
 
-export function getCityKey(city) {
+export function getCityKey(city: Partial<City> | null | undefined): string {
   if (city?.id !== undefined && city?.id !== null) {
     return String(city.id)
   }
@@ -8,7 +10,7 @@ export function getCityKey(city) {
   return `${city?.name ?? 'city'}-${city?.latitude ?? 'lat'}-${city?.longitude ?? 'lon'}`
 }
 
-export function loadSavedCities() {
+export function loadSavedCities(): City[] {
   if (typeof window === 'undefined') {
     return []
   }
@@ -20,14 +22,14 @@ export function loadSavedCities() {
       return []
     }
 
-    const parsedValue = JSON.parse(storedValue)
-    return Array.isArray(parsedValue) ? parsedValue : []
+    const parsedValue: unknown = JSON.parse(storedValue)
+    return Array.isArray(parsedValue) ? (parsedValue as City[]) : []
   } catch {
     return []
   }
 }
 
-export function saveCities(cities) {
+export function saveCities(cities: City[]): void {
   if (typeof window === 'undefined') {
     return
   }

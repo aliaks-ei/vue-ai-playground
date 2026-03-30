@@ -1,19 +1,37 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import CardActions from './CardActions.vue'
-import type { City, CurrentWeather, WeatherEntry } from '../lib/types'
+import {
+  formatPercent,
+  formatRelativeTime,
+  formatTemperature,
+  formatWindSpeed,
+} from '../lib/formatters'
+import type {
+  City,
+  CurrentWeather,
+  TemperatureUnit,
+  WeatherEntry,
+  WindSpeedUnit,
+} from '../lib/types'
 
 interface Props {
   city: City
   weather: WeatherEntry
+  temperatureUnit: TemperatureUnit
+  windSpeedUnit: WindSpeedUnit
+  isPinned?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isPinned: false,
+})
 
 const emit = defineEmits<{
   details: []
   remove: []
   retry: []
+  pin: []
 }>()
 
 const currentWeather = computed<CurrentWeather | null>(() =>
@@ -26,13 +44,24 @@ const weatherError = computed(() =>
 
 const weatherTheme = computed(() => getWeatherTheme(currentWeather.value?.weatherCode))
 
-function formatTemperature(value: number | null | undefined): string {
-  if (typeof value !== 'number') {
-    return '--'
+const statusText = computed(() => {
+  if (props.weather.status === 'success') {
+    if (props.weather.warning) {
+      return props.weather.warning
+    }
+
+    const freshness = props.weather.source === 'cached' ? 'cache' : 'live'
+    const syncState = props.weather.isRefreshing ? ' · syncing' : ''
+
+    return `Updated ${formatRelativeTime(props.weather.lastUpdated)} · ${freshness}${syncState}`
   }
 
-  return `${Math.round(value)}°C`
-}
+  if (props.weather.status === 'error') {
+    return weatherError.value
+  }
+
+  return 'Waiting for forecast'
+})
 
 function getWeatherTheme(code: number | null | undefined): string {
   if (typeof code !== 'number') {
@@ -65,18 +94,6 @@ function getWeatherTheme(code: number | null | undefined): string {
 
   return 'default'
 }
-
-function getStatusLabel(status: WeatherEntry['status']): string {
-  if (status === 'error') {
-    return 'Connection issue'
-  }
-
-  if (status === 'loading' || status === 'idle') {
-    return 'Live update'
-  }
-
-  return 'Current weather'
-}
 </script>
 
 <template>
@@ -87,12 +104,20 @@ function getStatusLabel(status: WeatherEntry['status']): string {
       `city-card--${weatherTheme}`,
     ]"
   >
-    <div class="city-card__aurora city-card__aurora--primary" />
-    <div class="city-card__aurora city-card__aurora--secondary" />
+    <div class="city-card__topline">
+      <span
+        v-if="props.isPinned"
+        class="city-card__badge"
+      >
+        Pinned
+      </span>
+      <span class="city-card__badge city-card__badge--muted">
+        {{ props.city.timezone }}
+      </span>
+    </div>
 
     <div class="city-card__header">
-      <div class="city-card__eyebrow-group">
-        <span class="city-card__eyebrow">{{ getStatusLabel(props.weather.status) }}</span>
+      <div>
         <p class="city-card__location">
           {{ props.city.admin1 ? `${props.city.admin1}, ` : '' }}{{ props.city.country }}
         </p>
@@ -110,59 +135,59 @@ function getStatusLabel(status: WeatherEntry['status']): string {
     </div>
 
     <div
-      v-if="props.weather.status === 'loading' || props.weather.status === 'idle'"
-      class="city-card__body city-card__body--status"
-    >
-      <div>
-        <p class="city-card__temperature">--</p>
-        <p class="city-card__condition">Fetching current weather</p>
-      </div>
-
-      <div class="city-card__visual">
-        <div class="city-card__orb" />
-      </div>
-    </div>
-
-    <div
-      v-else-if="props.weather.status === 'error'"
-      class="city-card__body city-card__body--status"
-    >
-      <div>
-        <p class="city-card__temperature">--</p>
-        <p class="city-card__condition">{{ weatherError }}</p>
-      </div>
-
-      <div class="city-card__visual">
-        <div class="city-card__orb city-card__orb--alert" />
-      </div>
-    </div>
-
-    <div
-      v-else
+      v-if="props.weather.status === 'success'"
       class="city-card__body"
     >
-      <div>
+      <div class="city-card__headline">
         <p class="city-card__temperature">
-          {{ formatTemperature(currentWeather?.temperature) }}
+          {{ formatTemperature(currentWeather?.temperature, props.temperatureUnit) }}
         </p>
         <p class="city-card__condition">{{ currentWeather?.condition }}</p>
       </div>
 
-      <div class="city-card__visual">
-        <div class="city-card__orb" />
-      </div>
+      <dl class="city-card__metrics">
+        <div>
+          <dt>Feels like</dt>
+          <dd>
+            {{ formatTemperature(currentWeather?.apparentTemperature, props.temperatureUnit) }}
+          </dd>
+        </div>
+        <div>
+          <dt>Wind</dt>
+          <dd>{{ formatWindSpeed(currentWeather?.windSpeed, props.windSpeedUnit) }}</dd>
+        </div>
+        <div>
+          <dt>Humidity</dt>
+          <dd>{{ formatPercent(currentWeather?.humidity) }}</dd>
+        </div>
+        <div>
+          <dt>Rain chance</dt>
+          <dd>{{ formatPercent(props.weather.daily[0]?.precipitationProbabilityMax ?? null) }}</dd>
+        </div>
+      </dl>
     </div>
 
-    <div class="city-card__footer">
-      <div class="city-card__meta">
-        <span class="city-card__meta-label">Forecast</span>
-        <span class="city-card__meta-value">5-day outlook</span>
-      </div>
+    <div
+      v-else
+      class="city-card__body city-card__body--status"
+    >
+      <p class="city-card__temperature">
+        {{ props.weather.status === 'error' ? '--' : '...' }}
+      </p>
+      <p class="city-card__condition">
+        {{ props.weather.status === 'error' ? weatherError : 'Loading weather details' }}
+      </p>
+    </div>
 
+    <p class="city-card__status">{{ statusText }}</p>
+
+    <div class="city-card__footer">
       <CardActions
         :show-retry="props.weather.status === 'error'"
+        :is-pinned="props.isPinned"
         @retry="emit('retry')"
         @details="emit('details')"
+        @pin="emit('pin')"
       />
     </div>
   </article>
@@ -170,84 +195,71 @@ function getStatusLabel(status: WeatherEntry['status']): string {
 
 <style scoped>
 .city-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border: 1px solid rgba(164, 196, 255, 0.18);
-  border-radius: 1.65rem;
-  padding: 1.4rem;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 36%),
-    linear-gradient(145deg, rgba(15, 28, 62, 0.98), rgba(5, 13, 30, 0.98));
-  box-shadow:
-    0 26px 50px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  min-height: 265px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
+  min-height: 280px;
+  padding: 1.4rem;
+  border-radius: 1.5rem;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.09), transparent 28%),
+    linear-gradient(180deg, rgba(11, 17, 29, 0.96), rgba(8, 12, 22, 0.96));
 }
 
 .city-card--sunny {
   background:
-    radial-gradient(circle at 82% 18%, rgba(255, 204, 82, 0.24), transparent 24%),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 36%),
-    linear-gradient(145deg, rgba(30, 65, 124, 0.98), rgba(8, 20, 42, 0.98));
+    radial-gradient(circle at top right, rgba(255, 194, 92, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(31, 54, 91, 0.96), rgba(10, 16, 29, 0.98));
 }
 
 .city-card--cloudy,
 .city-card--mist {
   background:
-    radial-gradient(circle at 82% 18%, rgba(195, 220, 255, 0.2), transparent 24%),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 36%),
-    linear-gradient(145deg, rgba(39, 56, 95, 0.98), rgba(10, 18, 37, 0.98));
+    radial-gradient(circle at top right, rgba(210, 224, 255, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(35, 44, 65, 0.96), rgba(12, 16, 24, 0.98));
 }
 
 .city-card--rain,
 .city-card--storm {
   background:
-    radial-gradient(circle at 82% 18%, rgba(56, 223, 248, 0.2), transparent 24%),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 36%),
-    linear-gradient(145deg, rgba(18, 47, 88, 0.98), rgba(4, 11, 26, 0.98));
+    radial-gradient(circle at top right, rgba(76, 178, 255, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(16, 35, 60, 0.96), rgba(8, 14, 25, 0.98));
 }
 
 .city-card--snow {
   background:
-    radial-gradient(circle at 82% 18%, rgba(229, 242, 255, 0.24), transparent 24%),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 36%),
-    linear-gradient(145deg, rgba(37, 61, 94, 0.98), rgba(8, 17, 35, 0.98));
+    radial-gradient(circle at top right, rgba(236, 243, 255, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(48, 67, 90, 0.96), rgba(15, 20, 29, 0.98));
 }
 
 .city-card--error {
   background:
-    radial-gradient(circle at 82% 18%, rgba(255, 126, 162, 0.24), transparent 24%),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 36%),
-    linear-gradient(145deg, rgba(72, 25, 49, 0.98), rgba(24, 10, 20, 0.98));
+    radial-gradient(circle at top right, rgba(255, 108, 120, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(61, 21, 31, 0.96), rgba(23, 11, 16, 0.98));
 }
 
-.city-card__aurora {
-  position: absolute;
+.city-card__topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.city-card__badge {
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
-  pointer-events: none;
-  filter: blur(40px);
-  opacity: 0.8;
-  z-index: -1;
+  padding: 0.32rem 0.62rem;
+  background: rgba(229, 236, 255, 0.16);
+  color: var(--text-main);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.city-card__aurora--primary {
-  top: -2.5rem;
-  right: -1.25rem;
-  width: 7rem;
-  height: 7rem;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.city-card__aurora--secondary {
-  bottom: -2.75rem;
-  left: -1rem;
-  width: 8rem;
-  height: 8rem;
-  background: rgba(56, 223, 248, 0.18);
+.city-card__badge--muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-soft);
 }
 
 .city-card__header {
@@ -257,190 +269,87 @@ function getStatusLabel(status: WeatherEntry['status']): string {
   align-items: flex-start;
 }
 
-.city-card__eyebrow-group {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.city-card__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  padding: 0.32rem 0.65rem;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(238, 244, 255, 0.82);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.city-card__location,
+.city-card__condition,
+.city-card__status {
+  margin: 0;
+  color: var(--text-soft);
 }
 
 .city-card__header h3 {
-  margin: 0;
-  font-size: 1.65rem;
-  line-height: 1.05;
-}
-
-.city-card__location {
-  margin: 0;
-  color: rgba(238, 244, 255, 0.72);
-  font-size: 0.92rem;
+  margin: 0.2rem 0 0;
+  font-size: 1.6rem;
 }
 
 .city-card__remove {
-  width: 2.35rem;
-  height: 2.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(8, 15, 34, 0.34);
-  color: rgba(255, 255, 255, 0.76);
-  border-radius: 50%;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  font-size: 1.35rem;
   cursor: pointer;
-  font-size: 1.15rem;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .city-card__body {
-  flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
-  align-items: center;
 }
 
 .city-card__body--status {
-  align-items: end;
+  flex: 1;
+  align-content: center;
+}
+
+.city-card__headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .city-card__temperature {
   margin: 0;
-  font-size: clamp(3rem, 7vw, 4.2rem);
+  font-size: 3.2rem;
   font-weight: 700;
-  line-height: 0.9;
-  letter-spacing: -0.04em;
+  line-height: 0.92;
 }
 
-.city-card__condition {
-  margin: 0.6rem 0 0;
-  color: rgba(238, 244, 255, 0.78);
+.city-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.city-card__metrics div {
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.city-card__metrics dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.city-card__metrics dd {
+  margin: 0.3rem 0 0;
+  font-weight: 700;
+}
+
+.city-card__status {
+  min-height: 2.5rem;
+  font-size: 0.9rem;
   line-height: 1.45;
-  max-width: 15rem;
-}
-
-.city-card__visual {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 6.6rem;
-  min-height: 6.6rem;
-}
-
-.city-card__orb {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.2) 22%, transparent 23%),
-    radial-gradient(circle at 65% 65%, rgba(255, 255, 255, 0.26), transparent 38%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 18px 30px rgba(0, 0, 0, 0.18);
-}
-
-.city-card--sunny .city-card__orb {
-  background:
-    radial-gradient(circle at 32% 30%, rgba(255, 248, 210, 0.98), rgba(255, 225, 119, 0.72) 28%, transparent 29%),
-    radial-gradient(circle at 65% 65%, rgba(255, 228, 150, 0.28), transparent 38%),
-    linear-gradient(145deg, rgba(255, 208, 90, 0.95), rgba(255, 144, 67, 0.22));
-}
-
-.city-card--cloudy .city-card__orb,
-.city-card--mist .city-card__orb {
-  background:
-    radial-gradient(circle at 32% 30%, rgba(248, 251, 255, 0.96), rgba(211, 227, 255, 0.55) 28%, transparent 29%),
-    radial-gradient(circle at 65% 65%, rgba(195, 220, 255, 0.26), transparent 38%),
-    linear-gradient(145deg, rgba(217, 230, 255, 0.88), rgba(122, 157, 216, 0.2));
-}
-
-.city-card--rain .city-card__orb,
-.city-card--storm .city-card__orb {
-  background:
-    radial-gradient(circle at 32% 30%, rgba(230, 250, 255, 0.96), rgba(117, 220, 255, 0.62) 28%, transparent 29%),
-    radial-gradient(circle at 65% 65%, rgba(56, 223, 248, 0.3), transparent 38%),
-    linear-gradient(145deg, rgba(95, 190, 255, 0.86), rgba(59, 108, 205, 0.24));
-}
-
-.city-card--snow .city-card__orb {
-  background:
-    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.98), rgba(220, 238, 255, 0.68) 28%, transparent 29%),
-    radial-gradient(circle at 65% 65%, rgba(216, 237, 255, 0.24), transparent 38%),
-    linear-gradient(145deg, rgba(241, 247, 255, 0.92), rgba(141, 184, 226, 0.22));
-}
-
-.city-card__orb--alert,
-.city-card--error .city-card__orb {
-  background:
-    radial-gradient(circle at 32% 30%, rgba(255, 238, 244, 0.96), rgba(255, 159, 187, 0.62) 28%, transparent 29%),
-    radial-gradient(circle at 65% 65%, rgba(255, 113, 156, 0.22), transparent 38%),
-    linear-gradient(145deg, rgba(255, 142, 176, 0.88), rgba(160, 53, 92, 0.2));
 }
 
 .city-card__footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: end;
-}
-
-.city-card__meta {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.city-card__meta-label {
-  color: rgba(238, 244, 255, 0.46);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.68rem;
-}
-
-.city-card__meta-value {
-  color: rgba(238, 244, 255, 0.86);
-  font-weight: 600;
-  font-size: 0.94rem;
+  margin-top: auto;
 }
 
 @media (max-width: 640px) {
   .city-card {
-    min-height: 240px;
-    padding: 1.2rem;
-    border-radius: 1.35rem;
-  }
-
-  .city-card__header h3 {
-    font-size: 1.45rem;
-  }
-
-  .city-card__body {
-    grid-template-columns: 1fr;
-  }
-
-  .city-card__visual {
-    width: 5.4rem;
-    min-height: 5.4rem;
-  }
-
-  .city-card__footer {
-    align-items: flex-start;
-    flex-direction: column;
+    min-height: auto;
   }
 }
 </style>

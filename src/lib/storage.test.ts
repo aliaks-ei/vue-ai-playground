@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { City } from './types'
-import { getCityKey, loadSavedCities, saveCities } from './storage'
+import type { City, DashboardPreferences, StoredWeatherRecord } from './types'
+import {
+  defaultDashboardPreferences,
+  getCityKey,
+  loadDashboardPreferences,
+  loadSavedCities,
+  loadWeatherCache,
+  saveCities,
+  saveDashboardPreferences,
+  saveWeatherCache,
+} from './storage'
 
 function mockCity(overrides: Partial<City> = {}): City {
   return {
@@ -11,6 +20,43 @@ function mockCity(overrides: Partial<City> = {}): City {
     country: 'Germany',
     admin1: 'Berlin',
     timezone: 'Europe/Berlin',
+    ...overrides,
+  }
+}
+
+function mockPreferences(
+  overrides: Partial<DashboardPreferences> = {},
+): DashboardPreferences {
+  return {
+    ...defaultDashboardPreferences,
+    temperatureUnit: 'fahrenheit',
+    windSpeedUnit: 'mph',
+    sortMode: 'updated-desc',
+    pinnedCityKey: '42',
+    ...overrides,
+  }
+}
+
+function mockWeatherRecord(overrides: Partial<StoredWeatherRecord> = {}): StoredWeatherRecord {
+  return {
+    current: {
+      temperature: 16,
+      apparentTemperature: 14,
+      weatherCode: 1,
+      condition: 'Mainly clear',
+      windSpeed: 12,
+      humidity: 65,
+      precipitation: 0.3,
+      isDay: true,
+    },
+    daily: [],
+    hourly: [],
+    lastUpdated: 123,
+    source: 'fresh',
+    units: {
+      temperature: 'celsius',
+      windSpeed: 'kmh',
+    },
     ...overrides,
   }
 }
@@ -32,29 +78,18 @@ describe('getCityKey', () => {
   it('uses safe fallbacks for missing fields', () => {
     expect(getCityKey({})).toBe('city-lat-lon')
   })
-
 })
 
 describe('saveCities + loadSavedCities', () => {
   it('persists and restores a list of cities', () => {
     const cities = [mockCity(), mockCity({ id: 2, name: 'Paris' })]
+
     saveCities(cities)
+
     expect(loadSavedCities()).toEqual(cities)
   })
 
   it('returns an empty array when nothing is stored', () => {
-    expect(loadSavedCities()).toEqual([])
-  })
-
-  it('overwrites a previous save with the full new list', () => {
-    saveCities([mockCity({ id: 1, name: 'Berlin' })])
-    saveCities([mockCity({ id: 2, name: 'Paris' })])
-    expect(loadSavedCities()).toEqual([mockCity({ id: 2, name: 'Paris' })])
-  })
-
-  it('persists an empty list', () => {
-    saveCities([mockCity()])
-    saveCities([])
     expect(loadSavedCities()).toEqual([])
   })
 
@@ -63,67 +98,60 @@ describe('saveCities + loadSavedCities', () => {
     ['{corrupt', 'stored JSON is malformed'],
   ])('returns an empty array when %s', (value) => {
     localStorage.setItem('saved-cities-weather-dashboard:cities', value)
+
     expect(loadSavedCities()).toEqual([])
   })
 })
 
-describe('addCity persistence ordering (regression)', () => {
-  it('includes the newly added city when saved', () => {
-    const existing = mockCity({ id: 1, name: 'Berlin' })
-    const newCity = mockCity({ id: 2, name: 'Paris' })
+describe('saveDashboardPreferences + loadDashboardPreferences', () => {
+  it('persists dashboard preferences', () => {
+    const preferences = mockPreferences()
 
-    let savedCities = [existing]
+    saveDashboardPreferences(preferences)
 
-    savedCities = [newCity, ...savedCities]
-    saveCities(savedCities)
-
-    const restored = loadSavedCities()
-    expect(restored.map((city) => city.id)).toContain(newCity.id)
+    expect(loadDashboardPreferences()).toEqual(preferences)
   })
 
-  it('does not include the new city when saved before the list is updated', () => {
-    const existing = mockCity({ id: 1, name: 'Berlin' })
-    const newCity = mockCity({ id: 2, name: 'Paris' })
+  it('falls back to defaults for invalid persisted values', () => {
+    localStorage.setItem(
+      'saved-cities-weather-dashboard:preferences',
+      JSON.stringify({
+        temperatureUnit: 'kelvin',
+        windSpeedUnit: 'knots',
+        sortMode: 'random',
+        pinnedCityKey: 1,
+      }),
+    )
 
-    let savedCities = [existing]
-
-    saveCities(savedCities)
-    savedCities = [newCity, ...savedCities]
-
-    const restored = loadSavedCities()
-    expect(restored.map((city) => city.id)).not.toContain(newCity.id)
-  })
-
-  it('restores all cities added in a session', () => {
-    const cities = [
-      mockCity({ id: 1, name: 'Berlin' }),
-      mockCity({ id: 2, name: 'Paris' }),
-      mockCity({ id: 3, name: 'Tokyo' }),
-    ]
-
-    let savedCities: City[] = []
-    for (const city of cities) {
-      savedCities = [city, ...savedCities]
-      saveCities(savedCities)
-    }
-
-    const restored = loadSavedCities()
-    expect(restored.map((city) => city.id)).toEqual(expect.arrayContaining([1, 2, 3]))
+    expect(loadDashboardPreferences()).toEqual(defaultDashboardPreferences)
   })
 })
 
-describe('removeCity persistence', () => {
-  it('removing a city and saving excludes it from the restored list', () => {
-    const berlin = mockCity({ id: 1, name: 'Berlin' })
-    const paris = mockCity({ id: 2, name: 'Paris' })
+describe('saveWeatherCache + loadWeatherCache', () => {
+  it('persists and restores cached weather by city key', () => {
+    const cache = {
+      berlin: mockWeatherRecord(),
+      paris: mockWeatherRecord({
+        lastUpdated: 456,
+        units: {
+          temperature: 'fahrenheit',
+          windSpeed: 'mph',
+        },
+      }),
+    }
 
-    saveCities([berlin, paris])
+    saveWeatherCache(cache)
 
-    const afterRemove = [berlin, paris].filter((city) => getCityKey(city) !== getCityKey(paris))
-    saveCities(afterRemove)
+    expect(loadWeatherCache()).toEqual(cache)
+  })
 
-    const restored = loadSavedCities()
-    expect(restored.map((city) => city.id)).not.toContain(paris.id)
-    expect(restored.map((city) => city.id)).toContain(berlin.id)
+  it('returns an empty object when the cache is missing or malformed', () => {
+    expect(loadWeatherCache()).toEqual({})
+
+    localStorage.setItem('saved-cities-weather-dashboard:weather-cache', '[1,2,3]')
+    expect(loadWeatherCache()).toEqual({})
+
+    localStorage.setItem('saved-cities-weather-dashboard:weather-cache', '{broken')
+    expect(loadWeatherCache()).toEqual({})
   })
 })

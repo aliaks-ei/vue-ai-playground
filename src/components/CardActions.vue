@@ -1,20 +1,31 @@
 <script setup lang="ts">
 interface Props {
   showRetry?: boolean
+  isPinned?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   showRetry: false,
+  isPinned: false,
 })
 
 const emit = defineEmits<{
   retry: []
   details: []
+  pin: []
 }>()
 </script>
 
 <template>
   <div class="card-actions">
+    <button
+      class="card-action card-action--ghost"
+      type="button"
+      @click="emit('pin')"
+    >
+      {{ isPinned ? 'Unpin' : 'Pin' }}
+    </button>
+
     <button
       v-if="showRetry"
       class="card-action card-action--ghost"
@@ -37,6 +48,7 @@ const emit = defineEmits<{
 <style scoped>
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   align-items: center;
 }
@@ -57,8 +69,8 @@ const emit = defineEmits<{
 
 .card-action--primary {
   border: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(191, 226, 255, 0.86));
-  color: #06152d;
+  background: linear-gradient(135deg, rgba(240, 245, 255, 0.98), rgba(192, 219, 255, 0.92));
+  color: #071321;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
 }
 </style>

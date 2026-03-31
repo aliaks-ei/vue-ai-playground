@@ -154,30 +154,34 @@ const secondaryCities = computed(() => {
 })
 
 const comparisonHighlights = computed(() => {
-  if (weatherSuccessEntries.value.length === 0) {
+  const entries = weatherSuccessEntries.value
+  if (entries.length === 0) {
     return []
   }
 
-  const hottest = [...weatherSuccessEntries.value].sort(
-    (left, right) =>
-      (right.weather.current.temperature ?? Number.NEGATIVE_INFINITY) -
-      (left.weather.current.temperature ?? Number.NEGATIVE_INFINITY),
-  )[0]
-  const coolest = [...weatherSuccessEntries.value].sort(
-    (left, right) =>
-      (left.weather.current.temperature ?? Number.POSITIVE_INFINITY) -
-      (right.weather.current.temperature ?? Number.POSITIVE_INFINITY),
-  )[0]
-  const windiest = [...weatherSuccessEntries.value].sort(
-    (left, right) =>
-      (right.weather.current.windSpeed ?? Number.NEGATIVE_INFINITY) -
-      (left.weather.current.windSpeed ?? Number.NEGATIVE_INFINITY),
-  )[0]
-  const rainiest = [...weatherSuccessEntries.value].sort(
-    (left, right) =>
-      (right.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY) -
-      (left.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY),
-  )[0]
+  let hottest = entries[0]
+  let coolest = entries[0]
+  let windiest = entries[0]
+  let rainiest = entries[0]
+
+  for (const entry of entries) {
+    const temp = entry.weather.current.temperature ?? Number.NEGATIVE_INFINITY
+    const wind = entry.weather.current.windSpeed ?? Number.NEGATIVE_INFINITY
+    const rain = entry.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY
+
+    if (temp > (hottest.weather.current.temperature ?? Number.NEGATIVE_INFINITY)) {
+      hottest = entry
+    }
+    if (temp < (coolest.weather.current.temperature ?? Number.POSITIVE_INFINITY)) {
+      coolest = entry
+    }
+    if (wind > (windiest.weather.current.windSpeed ?? Number.NEGATIVE_INFINITY)) {
+      windiest = entry
+    }
+    if (rain > (rainiest.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY)) {
+      rainiest = entry
+    }
+  }
 
   return [
     {
@@ -406,14 +410,15 @@ async function addCity(city: City): Promise<void> {
 function removeCity(city: City): void {
   const cityKey = getCityKey(city)
 
+  weatherControllers.get(cityKey)?.abort()
+  weatherControllers.delete(cityKey)
+
   savedCities.value = savedCities.value.filter(
     (savedCity) => getCityKey(savedCity) !== cityKey,
   )
   saveCities(savedCities.value)
   removeWeatherEntry(cityKey)
   removeWeatherRecord(cityKey)
-  weatherControllers.get(cityKey)?.abort()
-  weatherControllers.delete(cityKey)
 
   if (selectedCityKey.value === cityKey) {
     selectedCityKey.value = null

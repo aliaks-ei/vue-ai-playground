@@ -108,6 +108,7 @@ function getWeatherTheme(code: number | null | undefined): string {
       <span
         v-if="props.isPinned"
         class="city-card__badge"
+        data-test="pinned-badge"
       >
         Pinned
       </span>
@@ -121,13 +122,14 @@ function getWeatherTheme(code: number | null | undefined): string {
         <p class="city-card__location">
           {{ props.city.admin1 ? `${props.city.admin1}, ` : '' }}{{ props.city.country }}
         </p>
-        <h3>{{ props.city.name }}</h3>
+        <h3 data-test="city-name">{{ props.city.name }}</h3>
       </div>
 
       <button
         class="city-card__remove"
         type="button"
         aria-label="Remove city"
+        data-test="remove-btn"
         @click="emit('remove')"
       >
         ×
@@ -139,10 +141,10 @@ function getWeatherTheme(code: number | null | undefined): string {
       class="city-card__body"
     >
       <div class="city-card__headline">
-        <p class="city-card__temperature">
+        <p class="city-card__temperature" data-test="temperature">
           {{ formatTemperature(currentWeather?.temperature, props.temperatureUnit) }}
         </p>
-        <p class="city-card__condition">{{ currentWeather?.condition }}</p>
+        <p class="city-card__condition" data-test="condition">{{ currentWeather?.condition }}</p>
       </div>
 
       <dl class="city-card__metrics">
@@ -179,7 +181,7 @@ function getWeatherTheme(code: number | null | undefined): string {
       </p>
     </div>
 
-    <p class="city-card__status">{{ statusText }}</p>
+    <p class="city-card__status" data-test="status-text">{{ statusText }}</p>
 
     <div class="city-card__footer">
       <CardActions

@@ -83,12 +83,13 @@ onBeforeUnmount(() => {
           class="city-drawer"
           role="dialog"
           aria-modal="true"
+          data-test="drawer-panel"
           :aria-label="city ? `${city.name} forecast details` : 'Forecast details'"
         >
           <header class="city-drawer__header">
             <div>
               <p class="eyebrow">Forecast details</p>
-              <h2>{{ city?.name }}</h2>
+              <h2 data-test="drawer-city-name">{{ city?.name }}</h2>
               <p class="city-drawer__location">
                 {{ city?.admin1 ? `${city.admin1}, ` : '' }}{{ city?.country }}
               </p>
@@ -98,6 +99,7 @@ onBeforeUnmount(() => {
               class="city-drawer__close"
               type="button"
               aria-label="Close details"
+              data-test="close-btn"
               @click="emit('close')"
             >
               ×
@@ -107,6 +109,7 @@ onBeforeUnmount(() => {
           <div
             v-if="weather?.status === 'loading' || weather?.status === 'idle'"
             class="city-drawer__state"
+            data-test="drawer-loading"
           >
             Loading forecast...
           </div>
@@ -114,11 +117,13 @@ onBeforeUnmount(() => {
           <div
             v-else-if="weather?.status === 'error'"
             class="city-drawer__state city-drawer__state--error"
+            data-test="drawer-error"
           >
             <p>{{ weatherError }}</p>
             <button
               class="city-drawer__retry"
               type="button"
+              data-test="drawer-retry-btn"
               @click="emit('retry')"
             >
               Retry
@@ -128,6 +133,7 @@ onBeforeUnmount(() => {
           <div
             v-else
             class="city-drawer__content"
+            data-test="drawer-content"
           >
             <section class="city-drawer__hero">
               <div>
@@ -212,6 +218,7 @@ onBeforeUnmount(() => {
                 v-for="day in forecastDays"
                 :key="day.date"
                 class="forecast-list__item"
+                data-test="forecast-day"
               >
                 <div>
                   <p class="forecast-list__date">{{ formatDayDate(day.date) }}</p>
@@ -352,10 +359,15 @@ onBeforeUnmount(() => {
   text-align: right;
 }
 
-.drawer-metrics,
-.sun-cycle {
+.drawer-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.sun-cycle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
 }
 

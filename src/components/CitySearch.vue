@@ -208,6 +208,7 @@ onBeforeUnmount(() => {
       <button
         class="search-card__location-button"
         type="button"
+        data-test="locate-btn"
         :disabled="isLocating"
         @click="emit('locate')"
       >
@@ -228,6 +229,7 @@ onBeforeUnmount(() => {
         class="search-card__input"
         type="text"
         autocomplete="off"
+        data-test="search-input"
         placeholder="Start typing a city name..."
         @keydown="handleKeydown"
       />
@@ -242,6 +244,7 @@ onBeforeUnmount(() => {
       <p
         v-if="loading"
         class="search-results__state"
+        data-test="search-loading"
       >
         Searching cities...
       </p>
@@ -249,6 +252,7 @@ onBeforeUnmount(() => {
       <p
         v-else-if="error"
         class="search-results__state search-results__state--error"
+        data-test="search-error"
       >
         {{ error }}
       </p>
@@ -256,6 +260,7 @@ onBeforeUnmount(() => {
       <p
         v-else-if="results.length === 0"
         class="search-results__state"
+        data-test="search-empty"
       >
         No matching cities found.
       </p>
@@ -272,6 +277,7 @@ onBeforeUnmount(() => {
             class="search-results__item"
             :class="{ 'search-results__item--active': index === activeIndex }"
             type="button"
+            data-test="search-result"
             :disabled="isSaved(city)"
             @mouseenter="activeIndex = isSaved(city) ? -1 : index"
             @click="selectCity(city)"
@@ -286,6 +292,7 @@ onBeforeUnmount(() => {
             <span
               v-if="isSaved(city)"
               class="search-results__badge"
+              data-test="saved-badge"
             >
               Saved
             </span>

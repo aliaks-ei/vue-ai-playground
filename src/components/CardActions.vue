@@ -21,6 +21,7 @@ const emit = defineEmits<{
     <button
       class="card-action card-action--ghost"
       type="button"
+      data-test="pin-btn"
       @click="emit('pin')"
     >
       {{ isPinned ? 'Unpin' : 'Pin' }}
@@ -30,6 +31,7 @@ const emit = defineEmits<{
       v-if="showRetry"
       class="card-action card-action--ghost"
       type="button"
+      data-test="retry-btn"
       @click="emit('retry')"
     >
       Retry
@@ -38,6 +40,7 @@ const emit = defineEmits<{
     <button
       class="card-action card-action--primary"
       type="button"
+      data-test="details-btn"
       @click="emit('details')"
     >
       Details

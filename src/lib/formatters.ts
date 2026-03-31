@@ -88,7 +88,8 @@ export function getWeatherSignal(weather: WeatherSuccessState): string[] {
   const signals: string[] = []
   const today = weather.daily[0]
 
-  if (typeof weather.current.windSpeed === 'number' && weather.current.windSpeed >= 35) {
+  const strongWindThreshold = weather.units.windSpeed === 'mph' ? 22 : 35
+  if (typeof weather.current.windSpeed === 'number' && weather.current.windSpeed >= strongWindThreshold) {
     signals.push('Strong wind')
   }
 

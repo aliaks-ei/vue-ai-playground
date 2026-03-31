@@ -9,7 +9,9 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - `src/lib/openMeteo.ts` handles geocoding and forecast fetching plus response normalization.
 - `src/lib/storage.ts` wraps `localStorage` reads/writes and stable city key generation.
 - `src/lib/types.ts` holds shared domain types, including the `WeatherEntry` union used across the app.
-- `src/lib/*.test.ts` contains Vitest coverage for shared logic.
+- `src/lib/formatters.ts` provides display formatting utilities.
+- `src/lib/weatherCodes.ts` maps WMO codes to labels/icons.
+- `src/lib/*.test.ts` and `src/components/*.test.ts` contain Vitest tests.
 - `src/main.ts`, `vite.config.ts`, `tsconfig.json`, and `eslint.config.js` define the app bootstrap and toolchain.
 
 ## Architecture Notes
@@ -42,7 +44,7 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - Always run `npm run type-check` after making changes.
 - Run `npm run test` after changing component files or test files.
 - Run `npm run build` before handing off substantive changes.
-- Read `agent_docs/checks.md` for the shared verification rules.
+- Read `agent_docs/testing.md` for the shared verification and testing rules.
 - Read `agent_docs/testing.md` before writing or expanding tests.
 
 ## PR Notes

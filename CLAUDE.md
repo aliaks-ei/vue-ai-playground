@@ -14,7 +14,10 @@ Vue 3 + Vite + TypeScript client-side weather dashboard. Searches cities via Ope
 - `src/lib/openMeteo.ts` — API calls and response normalization.
 - `src/lib/storage.ts` — `localStorage` helpers and city key generation.
 - `src/lib/types.ts` — shared domain types; discriminated `WeatherEntry` state.
-- `src/lib/*.test.ts` — Vitest unit tests for shared logic.
+- `src/lib/formatters.ts` — display formatting helpers.
+- `src/lib/weatherCodes.ts` — WMO weather code mappings.
+- `src/lib/*.test.ts`, `src/components/*.test.ts` — Vitest unit tests.
+- `src/styles.css` — global styles.
 
 ## Architecture Constraints
 

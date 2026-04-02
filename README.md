@@ -18,7 +18,7 @@ Client-side weather dashboard built with Vue 3, Vite, and TypeScript. It lets yo
 - Vite
 - TypeScript
 - Vitest
-- Oxlint
+- ESLint
 - Open-Meteo APIs
 
 ## Getting Started

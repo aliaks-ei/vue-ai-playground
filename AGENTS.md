@@ -12,7 +12,7 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - `src/lib/formatters.ts` provides display formatting utilities.
 - `src/lib/weatherCodes.ts` maps WMO codes to labels/icons.
 - `src/lib/*.test.ts` and `src/components/*.test.ts` contain Vitest tests.
-- `src/main.ts`, `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, and `.prettierrc.json` define the app bootstrap and toolchain.
+- `src/main.ts`, `vite.config.ts`, `tsconfig.json`, `.eslintrc.json`, and `.prettierrc.json` define the app bootstrap and toolchain.
 
 ## Architecture Notes
 
@@ -27,7 +27,7 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - `npm run type-check` runs `vue-tsc --noEmit`.
 - `npm run test` runs Vitest once.
 - `npm run test:watch` runs Vitest in watch mode.
-- `npm run lint` runs Oxlint.
+- `npm run lint` runs ESLint.
 - `npm run format` formats `src/` files in-place with Prettier.
 - `npm run format:check` checks formatting without writing (CI-friendly).
 - `npm run build` creates the production bundle.

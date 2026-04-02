@@ -50,9 +50,13 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const marker = '<!-- codex-docs-review -->';
+            const noUpdatesNeeded = 'No AGENTS.md or agent_docs updates needed for this PR.';
+            const applyHint = process.env.CODEX_FINAL_MESSAGE.includes(noUpdatesNeeded)
+              ? ''
+              : '\n\nComment `/codex-docs-apply` on this PR to have Codex apply the suggested docs updates.';
             const body = `${marker}
 
-            ${process.env.CODEX_FINAL_MESSAGE}`.trim();
+            ${process.env.CODEX_FINAL_MESSAGE}${applyHint}`.trim();
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,

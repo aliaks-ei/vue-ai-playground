@@ -31,7 +31,7 @@ Vue 3 + Vite + TypeScript client-side weather dashboard. Searches cities via Ope
 npm run dev          # Vite dev server
 npm run type-check   # vue-tsc
 npm run test         # Vitest once
-npm run lint         # ESLint
+npm run lint         # Oxlint
 npm run format       # Prettier — format src/ in-place
 npm run format:check # Prettier — check only (CI-friendly)
 npm run build        # production build

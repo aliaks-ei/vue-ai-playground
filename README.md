@@ -18,7 +18,7 @@ Client-side weather dashboard built with Vue 3, Vite, and TypeScript. It lets yo
 - Vite
 - TypeScript
 - Vitest
-- ESLint
+- Oxlint
 - Open-Meteo APIs
 
 ## Getting Started
@@ -46,7 +46,7 @@ Then open the local Vite URL shown in the terminal.
 - `npm run dev` - start the Vite dev server
 - `npm run build` - create a production build
 - `npm run preview` - preview the production build locally
-- `npm run lint` - run ESLint
+- `npm run lint` - run Oxlint
 - `npm run type-check` - run `vue-tsc --noEmit`
 - `npm run test` - run Vitest once
 - `npm run test:watch` - run Vitest in watch mode

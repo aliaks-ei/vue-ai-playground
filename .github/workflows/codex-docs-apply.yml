@@ -185,14 +185,16 @@ jobs:
                 AGENTS.md|agent_docs/*)
                   ;;
                 *)
-                  echo "Unexpected file change: $file"
-                  exit 1
+                  echo "Restoring non-docs file: $file"
+                  git restore -- "$file"
                   ;;
               esac
             done <<< "$changed_files"
           fi
 
-          if [[ -z "$changed_files" ]]; then
+          docs_changed="$(git status --porcelain | awk '{print $2}')"
+
+          if [[ -z "$docs_changed" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -240,8 +242,6 @@ jobs:
             summary="$STATUS_MESSAGE"
           elif [[ "$RUN_CODEX_OUTCOME" != "success" ]]; then
             summary='Codex did not complete the docs-apply run. Check the workflow logs for details.'
-          elif [[ "$VALIDATE_OUTCOME" != "success" ]]; then
-            summary='Codex changed files outside `AGENTS.md` or `agent_docs/`, so no commit was pushed.'
           elif [[ "$CHANGED" == "true" && -n "$COMMIT_SHA" ]]; then
             short_sha="${COMMIT_SHA:0:7}"
             summary="Applied docs updates to \`$HEAD_REF\` in \`$short_sha\`."

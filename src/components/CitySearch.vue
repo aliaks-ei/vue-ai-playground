@@ -7,15 +7,18 @@ import type { City } from "../lib/types"
 interface Props {
   savedCityKeys?: string[]
   isLocating?: boolean
+  recentSearches?: City[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   savedCityKeys: () => [],
   isLocating: false,
+  recentSearches: () => [],
 })
 
 const emit = defineEmits<{
   select: [city: City]
+  "select-recent": [city: City]
   locate: []
 }>()
 
@@ -33,6 +36,14 @@ let activeController: AbortController | null = null
 const showResults = computed(
   () => loading.value || error.value || results.value.length > 0 || hasSearched.value,
 )
+
+const showRecent = computed(
+  () => !showResults.value && query.value === "" && props.recentSearches.length > 0,
+)
+
+function selectRecentCity(city: City): void {
+  emit("select-recent", city)
+}
 
 function isSaved(city: City): boolean {
   return props.savedCityKeys.includes(getCityKey(city))
@@ -220,6 +231,25 @@ onBeforeUnmount(() => {
     </div>
 
     <p class="search-card__hint">Arrow keys navigate results. Enter adds the active city.</p>
+
+    <div v-if="showRecent" class="search-results" data-test="recent-searches">
+      <p class="search-results__state">Recent searches</p>
+      <ul class="search-results__list">
+        <li v-for="city in props.recentSearches" :key="getCityKey(city)">
+          <button
+            class="search-results__item"
+            type="button"
+            data-test="recent-result"
+            @click="selectRecentCity(city)"
+          >
+            <span class="search-results__name">{{ city.name }}</span>
+            <span class="search-results__meta">
+              {{ city.admin1 ? `${city.admin1}, ` : "" }}{{ city.country }}
+            </span>
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <div v-if="showResults" class="search-results">
       <p v-if="loading" class="search-results__state" data-test="search-loading">

@@ -6,28 +6,35 @@ This app is a client-side weather dashboard. It lets users save cities, hydrates
 
 ## State Ownership
 
-`src/App.vue` is the single orchestration layer. It owns:
+Business logic lives in `src/composables/`. `src/App.vue` is the orchestration layer that wires composables together and owns cross-cutting workflows.
 
-- the saved city list
-- the in-memory weather state keyed by city
-- the persisted weather cache
-- the selected city for the drawer
-- dashboard preferences
-- transient status messages
-- bulk refresh and current-location UI state
+Composables own:
 
-If a change affects more than one component, persistence, or network state, it probably belongs in `App.vue`.
+- `useWeather` — in-memory weather state, cache hydration, fetch lifecycle, abort controller management
+- `usePreferences` — dashboard preferences (temperature unit, wind unit, sort mode, pinned city)
+- `useSavedCities` — saved city list and `localStorage` persistence
+- `useAppMessage` — transient status message state
+
+`App.vue` owns:
+
+- cross-composable workflows (`addCity`, `removeCity`, `restoreCities`)
+- drawer selection state (`selectedCityKey`)
+- geolocation flow (`addCurrentLocation`)
+- derived display computeds (`sortedCities`, `primaryCity`, `comparisonHighlights`)
+
+If a change affects more than one composable, it probably belongs in `App.vue`.
 
 ## Module Boundaries
 
-- `src/App.vue`: workflow orchestration, async loading, cache hydration, preference updates, and wiring between components
+- `src/composables/`: domain business logic as Vue composables — one concern per file
+- `src/App.vue`: workflow orchestration and cross-composable coordination only; no raw `localStorage` or fetch calls
 - `src/lib/openMeteo.ts`: external API calls and response normalization only
 - `src/lib/storage.ts`: `localStorage` read/write helpers, defaults, and stable city key generation
 - `src/lib/types.ts`: shared domain types and the `WeatherEntry` async-state union
 - `src/lib/formatters.ts` and `src/lib/weatherCodes.ts`: display formatting and weather-code lookup helpers
 - `src/components/*.vue`: props/events driven UI with local interaction state only
 
-Keep side effects in `src/lib/` or `App.vue`. Do not introduce fetch or persistence logic inside presentational components.
+Keep side effects in `src/lib/` or composables. Do not introduce fetch or persistence logic inside presentational components.
 
 ## Core Invariants
 
@@ -41,8 +48,10 @@ Keep side effects in `src/lib/` or `App.vue`. Do not introduce fetch or persiste
 ## Where New Logic Goes
 
 - New API fields or request params: `src/lib/openMeteo.ts` and `src/lib/types.ts`
-- New persisted preferences or cache shape: `src/lib/storage.ts`, `src/lib/types.ts`, then `src/App.vue`
-- New cross-city computations, refresh rules, or selection logic: `src/App.vue`
+- New persisted preferences or cache shape: `src/lib/storage.ts`, `src/lib/types.ts`, then `usePreferences`
+- New weather loading behaviour or cache rules: `useWeather`
+- New city list rules: `useSavedCities`
+- New cross-city computations, refresh rules, or cross-composable coordination: `src/App.vue`
 - New card/drawer rendering for existing data: the relevant component
 - New display-only formatting: `src/lib/formatters.ts`
 

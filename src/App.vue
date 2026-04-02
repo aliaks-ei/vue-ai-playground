@@ -3,6 +3,10 @@ import { computed, onMounted, ref } from "vue"
 import CityDetailsDrawer from "./components/CityDetailsDrawer.vue"
 import CitySearch from "./components/CitySearch.vue"
 import SavedCityCard from "./components/SavedCityCard.vue"
+import { useAppMessage } from "./composables/useAppMessage"
+import { usePreferences } from "./composables/usePreferences"
+import { useSavedCities } from "./composables/useSavedCities"
+import { useWeather } from "./composables/useWeather"
 import {
   formatPercent,
   formatRelativeTime,
@@ -10,68 +14,60 @@ import {
   formatWindSpeed,
   getWeatherSignal,
 } from "./lib/formatters"
-import { fetchCityWeather, reverseGeocodeCity } from "./lib/openMeteo"
-import {
-  defaultDashboardPreferences,
-  getCityKey,
-  loadDashboardPreferences,
-  loadSavedCities,
-  loadWeatherCache,
-  saveCities,
-  saveDashboardPreferences,
-  saveWeatherCache,
-} from "./lib/storage"
+import { reverseGeocodeCity } from "./lib/openMeteo"
+import { getCityKey } from "./lib/storage"
 import type {
   City,
-  DashboardPreferences,
   SortMode,
-  StoredWeatherRecord,
   TemperatureUnit,
-  WeatherEntry,
   WeatherSuccessState,
   WindSpeedUnit,
 } from "./lib/types"
 
-type MessageTone = "info" | "warning" | "success"
+const { appMessage, appMessageTone, setMessage, clearMessage } = useAppMessage()
+const { preferences, updatePreferences, loadPreferences, setSortMode, togglePinnedCity } =
+  usePreferences()
+const {
+  savedCities,
+  savedCityKeys,
+  hasSavedCity,
+  addCityToList,
+  removeCityFromList,
+  restoreFromStorage,
+} = useSavedCities()
+const {
+  weatherByCity,
+  weatherSuccessEntries,
+  syncedCitiesCount,
+  refreshingAll,
+  getWeatherEntry,
+  getWeatherSuccess,
+  loadWeatherForCity,
+  refreshAllCities,
+  hydrateFromCache,
+  removeWeatherEntry,
+  removeWeatherRecord,
+  cancelCity,
+  initCache,
+} = useWeather(savedCities, preferences)
 
-const WEATHER_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 3
-const idleWeatherEntry: WeatherEntry = { status: "idle" }
-
-const savedCities = ref<City[]>([])
-const weatherByCity = ref<Record<string, WeatherEntry>>({})
-const weatherCache = ref<Record<string, StoredWeatherRecord>>({})
 const selectedCityKey = ref<string | null>(null)
-const preferences = ref<DashboardPreferences>({ ...defaultDashboardPreferences })
-const appMessage = ref("")
-const appMessageTone = ref<MessageTone>("info")
-const refreshingAll = ref(false)
 const locatingCurrentCity = ref(false)
-
-const weatherControllers = new Map<string, AbortController>()
-
-const savedCityKeys = computed(() => savedCities.value.map((city) => getCityKey(city)))
 
 const selectedCity = computed(
   () => savedCities.value.find((city) => getCityKey(city) === selectedCityKey.value) ?? null,
 )
 
 const selectedWeather = computed(() => {
-  if (!selectedCity.value) {
-    return null
-  }
-
-  return weatherByCity.value[getCityKey(selectedCity.value)] ?? idleWeatherEntry
+  if (!selectedCity.value) return null
+  return getWeatherEntry(selectedCity.value)
 })
 
-const weatherSuccessEntries = computed(() =>
+const weatherSuccessEntriesWithSuccess = computed(() =>
   savedCities.value.flatMap((city) => {
     const weather = weatherByCity.value[getCityKey(city)]
-
-    if (weather?.status !== "success") {
-      return []
-    }
-
-    return [{ city, weather }]
+    if (weather?.status !== "success") return []
+    return [{ city, weather: weather as WeatherSuccessState }]
   }),
 )
 
@@ -134,11 +130,8 @@ const primaryCity = computed(() => {
 })
 
 const primaryWeather = computed(() => {
-  if (!primaryCity.value) {
-    return null
-  }
-
-  return weatherByCity.value[getCityKey(primaryCity.value)] ?? idleWeatherEntry
+  if (!primaryCity.value) return null
+  return getWeatherEntry(primaryCity.value)
 })
 
 const secondaryCities = computed(() => {
@@ -151,7 +144,7 @@ const secondaryCities = computed(() => {
 })
 
 const comparisonHighlights = computed(() => {
-  const entries = weatherSuccessEntries.value
+  const entries = weatherSuccessEntriesWithSuccess.value
   if (entries.length === 0) {
     return []
   }
@@ -212,177 +205,6 @@ const comparisonHighlights = computed(() => {
   ]
 })
 
-const syncedCitiesCount = computed(
-  () => weatherSuccessEntries.value.filter(({ weather }) => weather.source === "fresh").length,
-)
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError"
-}
-
-function getWeatherSuccess(city: City): WeatherSuccessState | null {
-  const weather = weatherByCity.value[getCityKey(city)]
-  return weather?.status === "success" ? weather : null
-}
-
-function setMessage(message: string, tone: MessageTone = "info"): void {
-  appMessage.value = message
-  appMessageTone.value = tone
-}
-
-function clearMessage(): void {
-  appMessage.value = ""
-}
-
-function updateWeatherEntry(cityKey: string, nextState: WeatherEntry): void {
-  weatherByCity.value = {
-    ...weatherByCity.value,
-    [cityKey]: nextState,
-  }
-}
-
-function removeWeatherEntry(cityKey: string): void {
-  const nextEntries = { ...weatherByCity.value }
-  delete nextEntries[cityKey]
-  weatherByCity.value = nextEntries
-}
-
-function persistWeatherRecord(cityKey: string, weather: WeatherSuccessState): void {
-  weatherCache.value = {
-    ...weatherCache.value,
-    [cityKey]: {
-      current: weather.current,
-      daily: weather.daily,
-      hourly: weather.hourly,
-      lastUpdated: weather.lastUpdated,
-      source: weather.source,
-      units: weather.units,
-    },
-  }
-
-  saveWeatherCache(weatherCache.value)
-}
-
-function removeWeatherRecord(cityKey: string): void {
-  const nextCache = { ...weatherCache.value }
-  delete nextCache[cityKey]
-  weatherCache.value = nextCache
-  saveWeatherCache(weatherCache.value)
-}
-
-function hasSavedCity(cityKey: string): boolean {
-  return savedCities.value.some((city) => getCityKey(city) === cityKey)
-}
-
-function getWeatherEntry(city: City): WeatherEntry {
-  return weatherByCity.value[getCityKey(city)] ?? idleWeatherEntry
-}
-
-function hydrateWeatherFromCache(cities: City[]): void {
-  const nextEntries: Record<string, WeatherEntry> = {}
-
-  for (const city of cities) {
-    const cityKey = getCityKey(city)
-    const cachedWeather = weatherCache.value[cityKey]
-
-    if (!cachedWeather) {
-      continue
-    }
-
-    if (
-      cachedWeather.units.temperature !== preferences.value.temperatureUnit ||
-      cachedWeather.units.windSpeed !== preferences.value.windSpeedUnit
-    ) {
-      continue
-    }
-
-    if (Date.now() - cachedWeather.lastUpdated > WEATHER_CACHE_MAX_AGE_MS) {
-      continue
-    }
-
-    nextEntries[cityKey] = {
-      status: "success",
-      ...cachedWeather,
-      source: "cached",
-    }
-  }
-
-  weatherByCity.value = nextEntries
-}
-
-async function loadWeatherForCity(
-  city: City,
-  options: { background?: boolean } = {},
-): Promise<void> {
-  const cityKey = getCityKey(city)
-  const existingWeather = weatherByCity.value[cityKey]
-  const controller = new AbortController()
-
-  weatherControllers.get(cityKey)?.abort()
-  weatherControllers.set(cityKey, controller)
-
-  if (existingWeather?.status === "success") {
-    updateWeatherEntry(cityKey, {
-      ...existingWeather,
-      isRefreshing: true,
-      warning: "",
-    })
-  } else if (!options.background) {
-    updateWeatherEntry(cityKey, { status: "loading" })
-  }
-
-  try {
-    const nextWeather = await fetchCityWeather(city, {
-      signal: controller.signal,
-      temperatureUnit: preferences.value.temperatureUnit,
-      windSpeedUnit: preferences.value.windSpeedUnit,
-    })
-
-    if (weatherControllers.get(cityKey) !== controller || !hasSavedCity(cityKey)) {
-      return
-    }
-
-    const successState: WeatherSuccessState = {
-      status: "success",
-      ...nextWeather,
-      lastUpdated: Date.now(),
-      source: "fresh",
-    }
-
-    updateWeatherEntry(cityKey, successState)
-    persistWeatherRecord(cityKey, successState)
-  } catch (error: unknown) {
-    if (isAbortError(error) || weatherControllers.get(cityKey) !== controller) {
-      return
-    }
-
-    if (!hasSavedCity(cityKey)) {
-      return
-    }
-
-    const message =
-      error instanceof Error ? error.message : `Unable to load weather for ${city.name}.`
-
-    if (existingWeather?.status === "success") {
-      updateWeatherEntry(cityKey, {
-        ...existingWeather,
-        isRefreshing: false,
-        warning: message,
-      })
-      return
-    }
-
-    updateWeatherEntry(cityKey, {
-      status: "error",
-      error: message,
-    })
-  } finally {
-    if (weatherControllers.get(cityKey) === controller) {
-      weatherControllers.delete(cityKey)
-    }
-  }
-}
-
 async function addCity(city: City): Promise<void> {
   clearMessage()
 
@@ -393,8 +215,7 @@ async function addCity(city: City): Promise<void> {
     return
   }
 
-  savedCities.value = [city, ...savedCities.value]
-  saveCities(savedCities.value)
+  addCityToList(city)
 
   if (!preferences.value.pinnedCityKey) {
     updatePreferences({ pinnedCityKey: cityKey })
@@ -406,11 +227,8 @@ async function addCity(city: City): Promise<void> {
 function removeCity(city: City): void {
   const cityKey = getCityKey(city)
 
-  weatherControllers.get(cityKey)?.abort()
-  weatherControllers.delete(cityKey)
-
-  savedCities.value = savedCities.value.filter((savedCity) => getCityKey(savedCity) !== cityKey)
-  saveCities(savedCities.value)
+  cancelCity(cityKey)
+  removeCityFromList(cityKey)
   removeWeatherEntry(cityKey)
   removeWeatherRecord(cityKey)
 
@@ -446,63 +264,21 @@ function retrySelectedCity(): void {
   }
 }
 
-function updatePreferences(nextPreferences: Partial<DashboardPreferences>): void {
-  preferences.value = {
-    ...preferences.value,
-    ...nextPreferences,
-  }
-
-  saveDashboardPreferences(preferences.value)
-}
-
 function setTemperatureUnit(unit: TemperatureUnit): void {
-  if (preferences.value.temperatureUnit === unit) {
-    return
-  }
-
+  if (preferences.value.temperatureUnit === unit) return
   updatePreferences({ temperatureUnit: unit })
-  void refreshAllCities(true)
+  void refreshAllCities()
 }
 
 function setWindSpeedUnit(unit: WindSpeedUnit): void {
-  if (preferences.value.windSpeedUnit === unit) {
-    return
-  }
-
+  if (preferences.value.windSpeedUnit === unit) return
   updatePreferences({ windSpeedUnit: unit })
-  void refreshAllCities(true)
+  void refreshAllCities()
 }
 
-function setSortMode(sortMode: SortMode): void {
-  updatePreferences({ sortMode })
-}
-
-function togglePinnedCity(city: City): void {
-  const cityKey = getCityKey(city)
-
-  updatePreferences({
-    pinnedCityKey: preferences.value.pinnedCityKey === cityKey ? null : cityKey,
-  })
-}
-
-async function refreshAllCities(showMessage = false): Promise<void> {
-  if (savedCities.value.length === 0) {
-    return
-  }
-
-  refreshingAll.value = true
-
-  try {
-    await Promise.all(
-      savedCities.value.map((city) => loadWeatherForCity(city, { background: true })),
-    )
-
-    if (showMessage) {
-      setMessage("Weather refreshed for all saved cities.", "success")
-    }
-  } finally {
-    refreshingAll.value = false
-  }
+async function handleRefreshAll(): Promise<void> {
+  await refreshAllCities()
+  setMessage("Weather refreshed for all saved cities.", "success")
 }
 
 async function addCurrentLocation(): Promise<void> {
@@ -545,16 +321,13 @@ async function addCurrentLocation(): Promise<void> {
 }
 
 async function restoreCities(): Promise<void> {
-  preferences.value = loadDashboardPreferences()
-  weatherCache.value = loadWeatherCache()
+  loadPreferences()
+  initCache()
 
-  const restoredCities = loadSavedCities()
-  savedCities.value = restoredCities
-  hydrateWeatherFromCache(restoredCities)
+  const restoredCities = restoreFromStorage()
+  hydrateFromCache(restoredCities)
 
-  if (restoredCities.length === 0) {
-    return
-  }
+  if (restoredCities.length === 0) return
 
   await refreshAllCities()
 }
@@ -647,7 +420,7 @@ onMounted(() => {
             class="toolbar__refresh"
             type="button"
             :disabled="savedCities.length === 0 || refreshingAll"
-            @click="refreshAllCities(true)"
+            @click="handleRefreshAll"
           >
             {{ refreshingAll ? "Refreshing…" : "Refresh all" }}
           </button>

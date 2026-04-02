@@ -61,3 +61,11 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - Use short, imperative commit subjects.
 - PRs should summarize user-visible changes and list the verification you actually ran.
 - Include screenshots or a short recording when the UI changed in a meaningful way.
+
+## Review Guidelines
+
+- When reviewing a PR, check whether `AGENTS.md` or the relevant file in `agent_docs/` should change alongside the code.
+- Treat missing updates to commands, tooling, architecture notes, data flow, storage behavior, API normalization, UI boundaries, or testing guidance as review findings.
+- For docs-maintenance reviews, focus on the smallest set of doc files that should change and explain which changed source files triggered the recommendation.
+- When `Codex Docs Review` leaves actionable feedback on a same-repository PR, comment `/codex-docs-apply` on the PR to have Codex update `AGENTS.md` and `agent_docs/` on the PR branch.
+- The docs-apply workflow pushes with `GITHUB_TOKEN`, so rerun any follow-up workflows manually if you need fresh checks on the bot-authored commit.

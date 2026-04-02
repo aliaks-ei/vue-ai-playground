@@ -2,6 +2,7 @@
 name: smart-commit
 description: Analyzes changed or staged files, proposes a meaningful branch name and a Conventional Commits message, waits for user confirmation, then checks out to the branch, commits, and pushes. Use this skill whenever the user asks to "commit my changes", "push my work", "commit and push", "create a branch and commit", "stage and push", "smart commit", or any variation of wanting to commit and/or push their current changes. Also triggers on phrases like "wrap up my changes", "save my work to git", "commit this", "push this", or "ship this".
 model: sonnet
+allowed-tools: Bash(git *), Bash(gh *)
 ---
 
 # Smart Commit
@@ -33,12 +34,13 @@ Based on the diff, draft two things:
 
 ### Branch Name
 
-Rules:
-- Format: `<type>/<short-description>` (e.g., `feat/weather-cache-refresh`, `fix/city-search-debounce`, `chore/add-prettier`)
-- Use kebab-case, no spaces
-- Keep it under 50 characters
-- `<type>` must match the commit type (see below)
-- If the user is already on a feature branch (not `main`/`master`/`develop`), skip branch creation — they're already where they need to be. Note this explicitly in your proposal.
+First, check the current branch from Phase 1:
+- If the user is **already on a feature branch** (anything other than `main`, `master`, or `develop`), **do not propose a branch name at all** — skip this entirely and commit directly to the current branch.
+- If on `main`/`master`/`develop`, propose a new branch following these rules:
+  - Format: `<type>/<short-description>` (e.g., `feat/weather-cache-refresh`, `fix/city-search-debounce`, `chore/add-prettier`)
+  - Use kebab-case, no spaces
+  - Keep it under 50 characters
+  - `<type>` must match the commit type (see below)
 
 ### Commit Message
 
@@ -85,12 +87,27 @@ refactor(weather): extract normalization to openMeteo.ts
 
 ## Phase 3: Present Proposal and Wait for Confirmation
 
-Print the proposal clearly:
+Print the proposal clearly.
 
+**When on a feature branch** (no new branch needed):
 ```
 ## Smart Commit Proposal
 
-**Branch:** `feat/weather-cache-refresh`
+**Branch:** already on `chore/smart-commit-skill` — no new branch needed
+**Commit:** `chore(skills): add smart-commit skill`
+
+---
+Does this look right? Reply with:
+- **yes** / **ok** / **lgtm** — proceed as-is
+- A correction — e.g., "use fix not feat"
+- **cancel** — abort
+```
+
+**When on main/master/develop** (new branch will be created):
+```
+## Smart Commit Proposal
+
+**Branch:** `feat/weather-cache-refresh` ← will be created
 **Commit:** `feat(weather): add cache refresh on city card`
 
 ---
@@ -106,44 +123,37 @@ If the user suggests changes, update the proposal and present it again. Keep ite
 
 ## Phase 4: Execute
 
-Once confirmed, run these steps in order:
+Once confirmed, run all git steps in a **single bash command** so the user only needs to approve once.
 
-### 4a. Branch (skip if already on a feature branch)
+Compose the command based on the situation:
 
+**Standard case** (on main, new branch, simple commit message):
 ```bash
-git checkout -b <branch-name>
+git checkout -b <branch-name> && git add -A && git commit -m "<commit message>" && git push -u origin <branch-name>
 ```
 
-If the branch already exists locally, use `git checkout <branch-name>` instead.
-
-### 4b. Stage all changes (if not already fully staged)
-
+**Already on a feature branch** (skip checkout):
 ```bash
-git add -A
+git add -A && git commit -m "<commit message>" && git push -u origin <branch-name>
 ```
 
-Only run this if `git status` shows unstaged changes. If everything is already staged, skip.
-
-### 4c. Commit
-
+**Commit with body**:
 ```bash
-git commit -m "<commit message>"
+git checkout -b <branch-name> && git add -A && git commit -m "<subject>" -m "<body>" && git push -u origin <branch-name>
 ```
 
-If the commit message has a body, use:
+**Branch already exists locally** (use checkout instead of checkout -b):
 ```bash
-git commit -m "<subject>" -m "<body>"
+git checkout <branch-name> && git add -A && git commit -m "<commit message>" && git push -u origin <branch-name>
 ```
 
-### 4d. Push
+**No remote configured**: omit the push step entirely.
 
-```bash
-git push -u origin <branch-name>
-```
+If the overall command fails, report which step failed based on the error output and stop.
 
-### 4e. Report
+### 4b. Report
 
-After all steps complete, print a short summary:
+After the command completes, print a short summary:
 
 ```
 ## Done

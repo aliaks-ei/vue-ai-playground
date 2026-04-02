@@ -12,7 +12,7 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - `src/lib/formatters.ts` provides display formatting utilities.
 - `src/lib/weatherCodes.ts` maps WMO codes to labels/icons.
 - `src/lib/*.test.ts` and `src/components/*.test.ts` contain Vitest tests.
-- `src/main.ts`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, and `.prettierrc.json` define the app bootstrap and toolchain.
+- `src/main.ts`, `vite.config.ts`, `tsconfig.json`, `.eslintrc.json`, and `.prettierrc.json` define the app bootstrap and toolchain.
 
 ## Architecture Notes
 

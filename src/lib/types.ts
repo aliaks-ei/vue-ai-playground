@@ -17,6 +17,7 @@ export type SortMode =
   | "temperature-desc"
   | "temperature-asc"
   | "updated-desc"
+  | "weather-desc"
 
 export interface WeatherUnits {
   temperature: TemperatureUnit

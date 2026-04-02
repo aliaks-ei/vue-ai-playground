@@ -131,7 +131,7 @@ function buildForecast(payload: ForecastPayload): ForecastDay[] {
 }
 
 function buildHourlyForecast(payload: ForecastPayload): HourlyForecastPoint[] {
-  return (payload.hourly?.time ?? []).slice(0, 12).map((time, index) => {
+  return (payload.hourly?.time ?? []).slice(0, 24).map((time, index) => {
     const weatherCode = payload.hourly?.weather_code?.[index] ?? null
 
     return {
@@ -200,7 +200,7 @@ export async function fetchCityWeather(
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max",
     hourly: "temperature_2m,weather_code,precipitation_probability",
-    forecast_days: "7",
+    forecast_days: "14",
     temperature_unit: options.temperatureUnit,
     wind_speed_unit: options.windSpeedUnit,
     timezone: "auto",

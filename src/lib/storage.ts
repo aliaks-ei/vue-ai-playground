@@ -10,6 +10,9 @@ import type {
 const CITY_STORAGE_KEY = "saved-cities-weather-dashboard:cities"
 const PREFERENCES_STORAGE_KEY = "saved-cities-weather-dashboard:preferences"
 const WEATHER_CACHE_STORAGE_KEY = "saved-cities-weather-dashboard:weather-cache"
+const RECENT_SEARCHES_STORAGE_KEY = "saved-cities-weather-dashboard:recent-searches"
+
+const MAX_RECENT_SEARCHES = 5
 
 const validTemperatureUnits: TemperatureUnit[] = ["celsius", "fahrenheit"]
 const validWindSpeedUnits: WindSpeedUnit[] = ["kmh", "mph"]
@@ -111,4 +114,13 @@ export function loadWeatherCache(): Record<string, StoredWeatherRecord> {
 
 export function saveWeatherCache(cache: Record<string, StoredWeatherRecord>): void {
   saveJson(WEATHER_CACHE_STORAGE_KEY, cache)
+}
+
+export function loadRecentSearches(): City[] {
+  const parsedValue = loadJson(RECENT_SEARCHES_STORAGE_KEY)
+  return Array.isArray(parsedValue) ? (parsedValue as City[]) : []
+}
+
+export function saveRecentSearches(cities: City[]): void {
+  saveJson(RECENT_SEARCHES_STORAGE_KEY, cities.slice(0, MAX_RECENT_SEARCHES))
 }

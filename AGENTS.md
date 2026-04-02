@@ -44,6 +44,12 @@ This repository is a Vue 3 + Vite + TypeScript weather dashboard. Application co
 - Always run `npm run type-check` after making changes.
 - Run `npm run test` after changing component files or test files.
 - Run `npm run build` before handing off substantive changes.
+- Read the relevant docs in `agent_docs/` when the task touches that area:
+  - `agent_docs/architecture.md` for state ownership and module boundaries
+  - `agent_docs/data-flow.md` for startup, refresh, and city/weather workflows
+  - `agent_docs/open-meteo.md` for API contract and normalization behavior
+  - `agent_docs/storage.md` for persistence and city-key rules
+  - `agent_docs/ui-boundaries.md` for component responsibilities and props/events boundaries
 - Read `agent_docs/testing.md` for the shared verification and testing rules.
 - Read `agent_docs/testing.md` before writing or expanding tests.
 

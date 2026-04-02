@@ -39,6 +39,17 @@ npm run build       # production build
 
 After making changes, always run: `npm run lint`, `npm run type-check`, and `npm run test` (if component or test files changed).
 
+## Agent Docs
+
+Read only the docs relevant to the task:
+
+- `agent_docs/architecture.md` — state ownership, module boundaries, and async-state invariants.
+- `agent_docs/data-flow.md` — startup hydration, refresh behavior, and city/weather workflows.
+- `agent_docs/open-meteo.md` — API contract and normalization rules.
+- `agent_docs/storage.md` — `localStorage` keys, validation, and city-key rules.
+- `agent_docs/ui-boundaries.md` — component responsibilities and props/events boundaries.
+- `agent_docs/testing.md` — shared testing rules.
+
 ## Testing
 
 Read `agent_docs/testing.md` before adding or changing tests.

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import CardActions from './CardActions.vue'
+import { computed } from "vue"
+import CardActions from "./CardActions.vue"
 import {
   formatPercent,
   formatRelativeTime,
   formatTemperature,
   formatWindSpeed,
-} from '../lib/formatters'
+} from "../lib/formatters"
 import type {
   City,
   CurrentWeather,
   TemperatureUnit,
   WeatherEntry,
   WindSpeedUnit,
-} from '../lib/types'
+} from "../lib/types"
 
 interface Props {
   city: City
@@ -35,83 +35,74 @@ const emit = defineEmits<{
 }>()
 
 const currentWeather = computed<CurrentWeather | null>(() =>
-  props.weather.status === 'success' ? props.weather.current : null,
+  props.weather.status === "success" ? props.weather.current : null,
 )
 
 const weatherError = computed(() =>
-  props.weather.status === 'error' ? props.weather.error : 'Unable to load weather.',
+  props.weather.status === "error" ? props.weather.error : "Unable to load weather.",
 )
 
 const weatherTheme = computed(() => getWeatherTheme(currentWeather.value?.weatherCode))
 
 const statusText = computed(() => {
-  if (props.weather.status === 'success') {
+  if (props.weather.status === "success") {
     if (props.weather.warning) {
       return props.weather.warning
     }
 
-    const freshness = props.weather.source === 'cached' ? 'cache' : 'live'
-    const syncState = props.weather.isRefreshing ? ' · syncing' : ''
+    const freshness = props.weather.source === "cached" ? "cache" : "live"
+    const syncState = props.weather.isRefreshing ? " · syncing" : ""
 
     return `Updated ${formatRelativeTime(props.weather.lastUpdated)} · ${freshness}${syncState}`
   }
 
-  if (props.weather.status === 'error') {
+  if (props.weather.status === "error") {
     return weatherError.value
   }
 
-  return 'Waiting for forecast'
+  return "Waiting for forecast"
 })
 
 function getWeatherTheme(code: number | null | undefined): string {
-  if (typeof code !== 'number') {
-    return 'default'
+  if (typeof code !== "number") {
+    return "default"
   }
 
   if (code === 0 || code === 1) {
-    return 'sunny'
+    return "sunny"
   }
 
   if (code === 2 || code === 3) {
-    return 'cloudy'
+    return "cloudy"
   }
 
   if (code === 45 || code === 48) {
-    return 'mist'
+    return "mist"
   }
 
   if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
-    return 'rain'
+    return "rain"
   }
 
   if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
-    return 'snow'
+    return "snow"
   }
 
   if (code >= 95) {
-    return 'storm'
+    return "storm"
   }
 
-  return 'default'
+  return "default"
 }
 </script>
 
 <template>
   <article
     class="city-card"
-    :class="[
-      `city-card--${props.weather.status}`,
-      `city-card--${weatherTheme}`,
-    ]"
+    :class="[`city-card--${props.weather.status}`, `city-card--${weatherTheme}`]"
   >
     <div class="city-card__topline">
-      <span
-        v-if="props.isPinned"
-        class="city-card__badge"
-        data-test="pinned-badge"
-      >
-        Pinned
-      </span>
+      <span v-if="props.isPinned" class="city-card__badge" data-test="pinned-badge"> Pinned </span>
       <span class="city-card__badge city-card__badge--muted">
         {{ props.city.timezone }}
       </span>
@@ -120,7 +111,7 @@ function getWeatherTheme(code: number | null | undefined): string {
     <div class="city-card__header">
       <div>
         <p class="city-card__location">
-          {{ props.city.admin1 ? `${props.city.admin1}, ` : '' }}{{ props.city.country }}
+          {{ props.city.admin1 ? `${props.city.admin1}, ` : "" }}{{ props.city.country }}
         </p>
         <h3 data-test="city-name">{{ props.city.name }}</h3>
       </div>
@@ -136,10 +127,7 @@ function getWeatherTheme(code: number | null | undefined): string {
       </button>
     </div>
 
-    <div
-      v-if="props.weather.status === 'success'"
-      class="city-card__body"
-    >
+    <div v-if="props.weather.status === 'success'" class="city-card__body">
       <div class="city-card__headline">
         <p class="city-card__temperature" data-test="temperature">
           {{ formatTemperature(currentWeather?.temperature, props.temperatureUnit) }}
@@ -169,15 +157,12 @@ function getWeatherTheme(code: number | null | undefined): string {
       </dl>
     </div>
 
-    <div
-      v-else
-      class="city-card__body city-card__body--status"
-    >
+    <div v-else class="city-card__body city-card__body--status">
       <p class="city-card__temperature">
-        {{ props.weather.status === 'error' ? '--' : '...' }}
+        {{ props.weather.status === "error" ? "--" : "..." }}
       </p>
       <p class="city-card__condition">
-        {{ props.weather.status === 'error' ? weatherError : 'Loading weather details' }}
+        {{ props.weather.status === "error" ? weatherError : "Loading weather details" }}
       </p>
     </div>
 

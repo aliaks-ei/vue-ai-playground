@@ -24,7 +24,7 @@ const emit = defineEmits<{
       data-test="pin-btn"
       @click="emit('pin')"
     >
-      {{ isPinned ? 'Unpin' : 'Pin' }}
+      {{ isPinned ? "Unpin" : "Pin" }}
     </button>
 
     <button

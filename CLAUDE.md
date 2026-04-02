@@ -28,16 +28,18 @@ Vue 3 + Vite + TypeScript client-side weather dashboard. Searches cities via Ope
 ## Commands
 
 ```bash
-npm run dev         # Vite dev server
-npm run type-check  # vue-tsc
-npm run test        # Vitest once
-npm run lint        # ESLint
-npm run build       # production build
+npm run dev          # Vite dev server
+npm run type-check   # vue-tsc
+npm run test         # Vitest once
+npm run lint         # ESLint
+npm run format       # Prettier — format src/ in-place
+npm run format:check # Prettier — check only (CI-friendly)
+npm run build        # production build
 ```
 
 ## Checks
 
-After making changes, always run: `npm run lint`, `npm run type-check`, and `npm run test` (if component or test files changed).
+After making changes, always run: `npm run format`, `npm run lint`, `npm run type-check`, and `npm run test` (if component or test files changed).
 
 ## Agent Docs
 

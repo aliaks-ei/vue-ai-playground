@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from "vue"
 import {
   formatClockTime,
   formatDayDate,
@@ -8,7 +8,7 @@ import {
   formatRelativeTime,
   formatTemperature,
   formatWindSpeed,
-} from '../lib/formatters'
+} from "../lib/formatters"
 import type {
   City,
   ForecastDay,
@@ -16,7 +16,7 @@ import type {
   WeatherEntry,
   WeatherSuccessState,
   WindSpeedUnit,
-} from '../lib/types'
+} from "../lib/types"
 
 interface Props {
   open?: boolean
@@ -38,18 +38,18 @@ const emit = defineEmits<{
 }>()
 
 const successWeather = computed<WeatherSuccessState | null>(() =>
-  props.weather?.status === 'success' ? props.weather : null,
+  props.weather?.status === "success" ? props.weather : null,
 )
 
 const weatherError = computed(() =>
-  props.weather?.status === 'error' ? props.weather.error : 'Unable to load weather.',
+  props.weather?.status === "error" ? props.weather.error : "Unable to load weather.",
 )
 
 const forecastDays = computed<ForecastDay[]>(() => successWeather.value?.daily ?? [])
 
 function handleEscape(event: KeyboardEvent): void {
-  if (event.key === 'Escape') {
-    emit('close')
+  if (event.key === "Escape") {
+    emit("close")
   }
 }
 
@@ -57,28 +57,24 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      window.addEventListener('keydown', handleEscape)
+      window.addEventListener("keydown", handleEscape)
       return
     }
 
-    window.removeEventListener('keydown', handleEscape)
+    window.removeEventListener("keydown", handleEscape)
   },
   { immediate: true },
 )
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleEscape)
+  window.removeEventListener("keydown", handleEscape)
 })
 </script>
 
 <template>
   <Teleport to="body">
     <transition name="drawer-fade">
-      <div
-        v-if="open"
-        class="drawer-overlay"
-        @click.self="emit('close')"
-      >
+      <div v-if="open" class="drawer-overlay" @click.self="emit('close')">
         <aside
           class="city-drawer"
           role="dialog"
@@ -91,7 +87,7 @@ onBeforeUnmount(() => {
               <p class="eyebrow">Forecast details</p>
               <h2 data-test="drawer-city-name">{{ city?.name }}</h2>
               <p class="city-drawer__location">
-                {{ city?.admin1 ? `${city.admin1}, ` : '' }}{{ city?.country }}
+                {{ city?.admin1 ? `${city.admin1}, ` : "" }}{{ city?.country }}
               </p>
             </div>
 
@@ -130,11 +126,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <div
-            v-else
-            class="city-drawer__content"
-            data-test="drawer-content"
-          >
+          <div v-else class="city-drawer__content" data-test="drawer-content">
             <section class="city-drawer__hero">
               <div>
                 <p class="city-drawer__label">Current weather</p>
@@ -146,9 +138,11 @@ onBeforeUnmount(() => {
 
               <div class="city-drawer__summary">
                 <span>
-                  Updated {{ successWeather ? formatRelativeTime(successWeather.lastUpdated) : '' }}
+                  Updated {{ successWeather ? formatRelativeTime(successWeather.lastUpdated) : "" }}
                 </span>
-                <strong>{{ successWeather?.source === 'cached' ? 'Cache hydrate' : 'Live sync' }}</strong>
+                <strong>{{
+                  successWeather?.source === "cached" ? "Cache hydrate" : "Live sync"
+                }}</strong>
               </div>
             </section>
 
@@ -156,12 +150,16 @@ onBeforeUnmount(() => {
               <article>
                 <span>Feels like</span>
                 <strong>
-                  {{ formatTemperature(successWeather?.current.apparentTemperature, temperatureUnit) }}
+                  {{
+                    formatTemperature(successWeather?.current.apparentTemperature, temperatureUnit)
+                  }}
                 </strong>
               </article>
               <article>
                 <span>Wind</span>
-                <strong>{{ formatWindSpeed(successWeather?.current.windSpeed, windSpeedUnit) }}</strong>
+                <strong>{{
+                  formatWindSpeed(successWeather?.current.windSpeed, windSpeedUnit)
+                }}</strong>
               </article>
               <article>
                 <span>Humidity</span>
@@ -173,17 +171,18 @@ onBeforeUnmount(() => {
               </article>
             </section>
 
-            <section
-              v-if="forecastDays[0]"
-              class="sun-cycle"
-            >
+            <section v-if="forecastDays[0]" class="sun-cycle">
               <article>
                 <span>Sunrise</span>
-                <strong>{{ forecastDays[0].sunrise ? formatClockTime(forecastDays[0].sunrise) : '--' }}</strong>
+                <strong>{{
+                  forecastDays[0].sunrise ? formatClockTime(forecastDays[0].sunrise) : "--"
+                }}</strong>
               </article>
               <article>
                 <span>Sunset</span>
-                <strong>{{ forecastDays[0].sunset ? formatClockTime(forecastDays[0].sunset) : '--' }}</strong>
+                <strong>{{
+                  forecastDays[0].sunset ? formatClockTime(forecastDays[0].sunset) : "--"
+                }}</strong>
               </article>
               <article>
                 <span>Rain chance</span>

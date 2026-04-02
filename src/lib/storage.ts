@@ -5,31 +5,31 @@ import type {
   StoredWeatherRecord,
   TemperatureUnit,
   WindSpeedUnit,
-} from './types'
+} from "./types"
 
-const CITY_STORAGE_KEY = 'saved-cities-weather-dashboard:cities'
-const PREFERENCES_STORAGE_KEY = 'saved-cities-weather-dashboard:preferences'
-const WEATHER_CACHE_STORAGE_KEY = 'saved-cities-weather-dashboard:weather-cache'
+const CITY_STORAGE_KEY = "saved-cities-weather-dashboard:cities"
+const PREFERENCES_STORAGE_KEY = "saved-cities-weather-dashboard:preferences"
+const WEATHER_CACHE_STORAGE_KEY = "saved-cities-weather-dashboard:weather-cache"
 
-const validTemperatureUnits: TemperatureUnit[] = ['celsius', 'fahrenheit']
-const validWindSpeedUnits: WindSpeedUnit[] = ['kmh', 'mph']
+const validTemperatureUnits: TemperatureUnit[] = ["celsius", "fahrenheit"]
+const validWindSpeedUnits: WindSpeedUnit[] = ["kmh", "mph"]
 const validSortModes: SortMode[] = [
-  'saved',
-  'alphabetical',
-  'temperature-desc',
-  'temperature-asc',
-  'updated-desc',
+  "saved",
+  "alphabetical",
+  "temperature-desc",
+  "temperature-asc",
+  "updated-desc",
 ]
 
 export const defaultDashboardPreferences: DashboardPreferences = {
-  temperatureUnit: 'celsius',
-  windSpeedUnit: 'kmh',
-  sortMode: 'saved',
+  temperatureUnit: "celsius",
+  windSpeedUnit: "kmh",
+  sortMode: "saved",
   pinnedCityKey: null,
 }
 
 function loadJson(storageKey: string): unknown {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null
   }
 
@@ -47,7 +47,7 @@ function loadJson(storageKey: string): unknown {
 }
 
 function saveJson(storageKey: string, value: unknown): void {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return
   }
 
@@ -59,7 +59,7 @@ export function getCityKey(city: Partial<City> | null | undefined): string {
     return String(city.id)
   }
 
-  return `${city?.name ?? 'city'}-${city?.latitude ?? 'lat'}-${city?.longitude ?? 'lon'}`
+  return `${city?.name ?? "city"}-${city?.latitude ?? "lat"}-${city?.longitude ?? "lon"}`
 }
 
 export function loadSavedCities(): City[] {
@@ -74,24 +74,24 @@ export function saveCities(cities: City[]): void {
 export function loadDashboardPreferences(): DashboardPreferences {
   const parsedValue = loadJson(PREFERENCES_STORAGE_KEY)
 
-  if (!parsedValue || typeof parsedValue !== 'object') {
+  if (!parsedValue || typeof parsedValue !== "object") {
     return { ...defaultDashboardPreferences }
   }
 
   const rawPreferences = parsedValue as Partial<DashboardPreferences>
 
   return {
-    temperatureUnit: validTemperatureUnits.includes(rawPreferences.temperatureUnit ?? 'celsius')
+    temperatureUnit: validTemperatureUnits.includes(rawPreferences.temperatureUnit ?? "celsius")
       ? (rawPreferences.temperatureUnit as TemperatureUnit)
       : defaultDashboardPreferences.temperatureUnit,
-    windSpeedUnit: validWindSpeedUnits.includes(rawPreferences.windSpeedUnit ?? 'kmh')
+    windSpeedUnit: validWindSpeedUnits.includes(rawPreferences.windSpeedUnit ?? "kmh")
       ? (rawPreferences.windSpeedUnit as WindSpeedUnit)
       : defaultDashboardPreferences.windSpeedUnit,
-    sortMode: validSortModes.includes(rawPreferences.sortMode ?? 'saved')
+    sortMode: validSortModes.includes(rawPreferences.sortMode ?? "saved")
       ? (rawPreferences.sortMode as SortMode)
       : defaultDashboardPreferences.sortMode,
     pinnedCityKey:
-      typeof rawPreferences.pinnedCityKey === 'string' ? rawPreferences.pinnedCityKey : null,
+      typeof rawPreferences.pinnedCityKey === "string" ? rawPreferences.pinnedCityKey : null,
   }
 }
 
@@ -102,7 +102,7 @@ export function saveDashboardPreferences(preferences: DashboardPreferences): voi
 export function loadWeatherCache(): Record<string, StoredWeatherRecord> {
   const parsedValue = loadJson(WEATHER_CACHE_STORAGE_KEY)
 
-  if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
     return {}
   }
 

@@ -1,9 +1,5 @@
 :root {
-  font-family:
-    "Space Grotesk",
-    "Avenir Next",
-    "Segoe UI",
-    sans-serif;
+  font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
   color: var(--text-main);
   background:
     radial-gradient(circle at top, rgba(120, 170, 255, 0.14), transparent 30%),
@@ -45,7 +41,10 @@ select {
 }
 
 button {
-  transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease,
+    background-color 0.18s ease;
 }
 
 button:hover:not(:disabled) {
@@ -69,7 +68,9 @@ body::before {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 24%),
     radial-gradient(circle, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: auto, 28px 28px;
+  background-size:
+    auto,
+    28px 28px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
   opacity: 0.24;
 }
@@ -233,11 +234,11 @@ body::before {
   color: var(--text-soft);
 }
 
-.masthead__message[data-tone='warning'] {
+.masthead__message[data-tone="warning"] {
   color: #ffc5cb;
 }
 
-.masthead__message[data-tone='success'] {
+.masthead__message[data-tone="success"] {
   color: #b8ffd0;
 }
 

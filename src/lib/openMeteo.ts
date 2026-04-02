@@ -6,12 +6,12 @@ import type {
   TemperatureUnit,
   WeatherSuccessState,
   WindSpeedUnit,
-} from './types'
-import { getWeatherLabel } from './weatherCodes'
+} from "./types"
+import { getWeatherLabel } from "./weatherCodes"
 
-const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search'
-const REVERSE_GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/reverse'
-const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
+const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+const REVERSE_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/reverse"
+const FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 interface GeocodingResult {
   id?: string | number
@@ -75,7 +75,7 @@ function normalizeCity(result: GeocodingResult): City {
     id: result.id ?? `${result.name}-${result.latitude}-${result.longitude}`,
     name: result.name,
     country: result.country,
-    admin1: result.admin1 || '',
+    admin1: result.admin1 || "",
     latitude: result.latitude,
     longitude: result.longitude,
     timezone: result.timezone,
@@ -83,7 +83,7 @@ function normalizeCity(result: GeocodingResult): City {
 }
 
 function roundTemperature(value: number | undefined): number | null {
-  if (typeof value !== 'number') {
+  if (typeof value !== "number") {
     return null
   }
 
@@ -91,7 +91,7 @@ function roundTemperature(value: number | undefined): number | null {
 }
 
 function roundMetric(value: number | undefined): number | null {
-  if (typeof value !== 'number') {
+  if (typeof value !== "number") {
     return null
   }
 
@@ -107,8 +107,7 @@ function buildCurrentWeather(payload: ForecastPayload): CurrentWeather {
     windSpeed: roundMetric(payload.current?.wind_speed_10m),
     humidity: roundMetric(payload.current?.relative_humidity_2m),
     precipitation: roundMetric(payload.current?.precipitation),
-    isDay:
-      typeof payload.current?.is_day === 'number' ? payload.current.is_day === 1 : null,
+    isDay: typeof payload.current?.is_day === "number" ? payload.current.is_day === 1 : null,
   }
 }
 
@@ -140,28 +139,23 @@ function buildHourlyForecast(payload: ForecastPayload): HourlyForecastPoint[] {
       temperature: roundTemperature(payload.hourly?.temperature_2m?.[index]),
       weatherCode,
       condition: getWeatherLabel(weatherCode),
-      precipitationProbability: roundMetric(
-        payload.hourly?.precipitation_probability?.[index],
-      ),
+      precipitationProbability: roundMetric(payload.hourly?.precipitation_probability?.[index]),
     }
   })
 }
 
-export async function searchCities(
-  query: string,
-  options: SearchOptions = {},
-): Promise<City[]> {
+export async function searchCities(query: string, options: SearchOptions = {}): Promise<City[]> {
   const params = new URLSearchParams({
     name: query,
-    count: '5',
-    language: 'en',
-    format: 'json',
+    count: "5",
+    language: "en",
+    format: "json",
   })
 
   const response = await fetch(`${GEOCODING_URL}?${params.toString()}`, {
     signal: options.signal,
   })
-  ensureOk(response, 'Unable to search cities right now.')
+  ensureOk(response, "Unable to search cities right now.")
 
   const payload = (await response.json()) as GeocodingPayload
 
@@ -176,15 +170,15 @@ export async function reverseGeocodeCity(
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    language: 'en',
-    format: 'json',
-    count: '1',
+    language: "en",
+    format: "json",
+    count: "1",
   })
 
   const response = await fetch(`${REVERSE_GEOCODING_URL}?${params.toString()}`, {
     signal: options.signal,
   })
-  ensureOk(response, 'Unable to determine your current city.')
+  ensureOk(response, "Unable to determine your current city.")
 
   const payload = (await response.json()) as GeocodingPayload
   const firstResult = payload.results?.[0]
@@ -195,19 +189,21 @@ export async function reverseGeocodeCity(
 export async function fetchCityWeather(
   city: City,
   options: WeatherRequestOptions,
-): Promise<Omit<WeatherSuccessState, 'status' | 'lastUpdated' | 'source' | 'isRefreshing' | 'warning'>> {
+): Promise<
+  Omit<WeatherSuccessState, "status" | "lastUpdated" | "source" | "isRefreshing" | "warning">
+> {
   const params = new URLSearchParams({
     latitude: String(city.latitude),
     longitude: String(city.longitude),
     current:
-      'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,is_day',
+      "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,is_day",
     daily:
-      'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max',
-    hourly: 'temperature_2m,weather_code,precipitation_probability',
-    forecast_days: '7',
+      "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max",
+    hourly: "temperature_2m,weather_code,precipitation_probability",
+    forecast_days: "7",
     temperature_unit: options.temperatureUnit,
     wind_speed_unit: options.windSpeedUnit,
-    timezone: 'auto',
+    timezone: "auto",
   })
 
   const response = await fetch(`${FORECAST_URL}?${params.toString()}`, {

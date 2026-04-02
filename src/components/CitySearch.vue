@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { searchCities } from '../lib/openMeteo'
-import { getCityKey } from '../lib/storage'
-import type { City } from '../lib/types'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { searchCities } from "../lib/openMeteo"
+import { getCityKey } from "../lib/storage"
+import type { City } from "../lib/types"
 
 interface Props {
   savedCityKeys?: string[]
@@ -19,10 +19,10 @@ const emit = defineEmits<{
   locate: []
 }>()
 
-const query = ref('')
+const query = ref("")
 const results = ref<City[]>([])
 const loading = ref(false)
-const error = ref('')
+const error = ref("")
 const hasSearched = ref(false)
 const activeIndex = ref(-1)
 const searchRoot = ref<HTMLDivElement | null>(null)
@@ -45,7 +45,7 @@ async function runSearch(rawQuery: string): Promise<void> {
 
   if (trimmedQuery.length < 2) {
     loading.value = false
-    error.value = ''
+    error.value = ""
     results.value = []
     hasSearched.value = false
     activeIndex.value = -1
@@ -55,7 +55,7 @@ async function runSearch(rawQuery: string): Promise<void> {
   const controller = new AbortController()
   activeController = controller
   loading.value = true
-  error.value = ''
+  error.value = ""
 
   try {
     const nextResults = await searchCities(trimmedQuery, {
@@ -72,15 +72,12 @@ async function runSearch(rawQuery: string): Promise<void> {
   } catch (requestError: unknown) {
     if (
       activeController !== controller ||
-      (requestError instanceof DOMException && requestError.name === 'AbortError')
+      (requestError instanceof DOMException && requestError.name === "AbortError")
     ) {
       return
     }
 
-    error.value =
-      requestError instanceof Error
-        ? requestError.message
-        : 'Unable to search cities.'
+    error.value = requestError instanceof Error ? requestError.message : "Unable to search cities."
     results.value = []
     hasSearched.value = true
     activeIndex.value = -1
@@ -99,9 +96,9 @@ function scheduleSearch(value: string): void {
 }
 
 function resetSearch(): void {
-  query.value = ''
+  query.value = ""
   results.value = []
-  error.value = ''
+  error.value = ""
   hasSearched.value = false
   activeIndex.value = -1
 }
@@ -111,7 +108,7 @@ function selectCity(city: City): void {
     return
   }
 
-  emit('select', city)
+  emit("select", city)
   resetSearch()
 }
 
@@ -143,17 +140,17 @@ function handleKeydown(event: KeyboardEvent): void {
     return
   }
 
-  if (event.key === 'ArrowDown') {
+  if (event.key === "ArrowDown") {
     event.preventDefault()
     moveActiveIndex(1)
   }
 
-  if (event.key === 'ArrowUp') {
+  if (event.key === "ArrowUp") {
     event.preventDefault()
     moveActiveIndex(-1)
   }
 
-  if (event.key === 'Enter' && activeIndex.value >= 0) {
+  if (event.key === "Enter" && activeIndex.value >= 0) {
     event.preventDefault()
     const activeCity = results.value[activeIndex.value]
 
@@ -162,7 +159,7 @@ function handleKeydown(event: KeyboardEvent): void {
     }
   }
 
-  if (event.key === 'Escape') {
+  if (event.key === "Escape") {
     resetSearch()
   }
 }
@@ -182,28 +179,20 @@ watch(query, (value) => {
 })
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
+  document.addEventListener("click", handleDocumentClick)
 })
 
 onBeforeUnmount(() => {
   activeController?.abort()
   window.clearTimeout(debounceId)
-  document.removeEventListener('click', handleDocumentClick)
+  document.removeEventListener("click", handleDocumentClick)
 })
 </script>
 
 <template>
-  <div
-    ref="searchRoot"
-    class="search-card"
-  >
+  <div ref="searchRoot" class="search-card">
     <div class="search-card__topline">
-      <label
-        class="search-card__label"
-        for="city-search"
-      >
-        Search for a city
-      </label>
+      <label class="search-card__label" for="city-search"> Search for a city </label>
 
       <button
         class="search-card__location-button"
@@ -212,17 +201,12 @@ onBeforeUnmount(() => {
         :disabled="isLocating"
         @click="emit('locate')"
       >
-        {{ isLocating ? 'Locating…' : 'Use current location' }}
+        {{ isLocating ? "Locating…" : "Use current location" }}
       </button>
     </div>
 
     <div class="search-card__field">
-      <span
-        class="search-card__icon"
-        aria-hidden="true"
-      >
-        ⌕
-      </span>
+      <span class="search-card__icon" aria-hidden="true"> ⌕ </span>
       <input
         id="city-search"
         v-model="query"
@@ -237,15 +221,8 @@ onBeforeUnmount(() => {
 
     <p class="search-card__hint">Arrow keys navigate results. Enter adds the active city.</p>
 
-    <div
-      v-if="showResults"
-      class="search-results"
-    >
-      <p
-        v-if="loading"
-        class="search-results__state"
-        data-test="search-loading"
-      >
+    <div v-if="showResults" class="search-results">
+      <p v-if="loading" class="search-results__state" data-test="search-loading">
         Searching cities...
       </p>
 
@@ -257,22 +234,12 @@ onBeforeUnmount(() => {
         {{ error }}
       </p>
 
-      <p
-        v-else-if="results.length === 0"
-        class="search-results__state"
-        data-test="search-empty"
-      >
+      <p v-else-if="results.length === 0" class="search-results__state" data-test="search-empty">
         No matching cities found.
       </p>
 
-      <ul
-        v-else
-        class="search-results__list"
-      >
-        <li
-          v-for="(city, index) in results"
-          :key="getCityKey(city)"
-        >
+      <ul v-else class="search-results__list">
+        <li v-for="(city, index) in results" :key="getCityKey(city)">
           <button
             class="search-results__item"
             :class="{ 'search-results__item--active': index === activeIndex }"
@@ -284,16 +251,12 @@ onBeforeUnmount(() => {
           >
             <span class="search-results__name">{{ city.name }}</span>
             <span class="search-results__meta">
-              {{ city.admin1 ? `${city.admin1}, ` : '' }}{{ city.country }}
+              {{ city.admin1 ? `${city.admin1}, ` : "" }}{{ city.country }}
             </span>
             <span class="search-results__meta search-results__meta--soft">
               {{ city.timezone }}
             </span>
-            <span
-              v-if="isSaved(city)"
-              class="search-results__badge"
-              data-test="saved-badge"
-            >
+            <span v-if="isSaved(city)" class="search-results__badge" data-test="saved-badge">
               Saved
             </span>
           </button>
@@ -356,7 +319,9 @@ onBeforeUnmount(() => {
   background: rgba(5, 9, 16, 0.88);
   color: var(--text-main);
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .search-card__input::placeholder {

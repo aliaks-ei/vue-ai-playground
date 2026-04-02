@@ -8,15 +8,15 @@ export interface City {
   timezone: string
 }
 
-export type WeatherStatus = 'idle' | 'loading' | 'success' | 'error'
-export type TemperatureUnit = 'celsius' | 'fahrenheit'
-export type WindSpeedUnit = 'kmh' | 'mph'
+export type WeatherStatus = "idle" | "loading" | "success" | "error"
+export type TemperatureUnit = "celsius" | "fahrenheit"
+export type WindSpeedUnit = "kmh" | "mph"
 export type SortMode =
-  | 'saved'
-  | 'alphabetical'
-  | 'temperature-desc'
-  | 'temperature-asc'
-  | 'updated-desc'
+  | "saved"
+  | "alphabetical"
+  | "temperature-desc"
+  | "temperature-asc"
+  | "updated-desc"
 
 export interface WeatherUnits {
   temperature: TemperatureUnit
@@ -61,25 +61,25 @@ export interface HourlyForecastPoint {
 }
 
 export interface WeatherIdleState {
-  status: 'idle'
+  status: "idle"
 }
 
 export interface WeatherLoadingState {
-  status: 'loading'
+  status: "loading"
 }
 
 export interface WeatherErrorState {
-  status: 'error'
+  status: "error"
   error: string
 }
 
 export interface WeatherSuccessState {
-  status: 'success'
+  status: "success"
   current: CurrentWeather
   daily: ForecastDay[]
   hourly: HourlyForecastPoint[]
   lastUpdated: number
-  source: 'fresh' | 'cached'
+  source: "fresh" | "cached"
   units: WeatherUnits
   isRefreshing?: boolean
   warning?: string
@@ -90,7 +90,7 @@ export interface StoredWeatherRecord {
   daily: ForecastDay[]
   hourly: HourlyForecastPoint[]
   lastUpdated: number
-  source: 'fresh' | 'cached'
+  source: "fresh" | "cached"
   units: WeatherUnits
 }
 

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import CityDetailsDrawer from './components/CityDetailsDrawer.vue'
-import CitySearch from './components/CitySearch.vue'
-import SavedCityCard from './components/SavedCityCard.vue'
+import { computed, onMounted, ref } from "vue"
+import CityDetailsDrawer from "./components/CityDetailsDrawer.vue"
+import CitySearch from "./components/CitySearch.vue"
+import SavedCityCard from "./components/SavedCityCard.vue"
 import {
   formatPercent,
   formatRelativeTime,
   formatTemperature,
   formatWindSpeed,
   getWeatherSignal,
-} from './lib/formatters'
-import { fetchCityWeather, reverseGeocodeCity } from './lib/openMeteo'
+} from "./lib/formatters"
+import { fetchCityWeather, reverseGeocodeCity } from "./lib/openMeteo"
 import {
   defaultDashboardPreferences,
   getCityKey,
@@ -20,7 +20,7 @@ import {
   saveCities,
   saveDashboardPreferences,
   saveWeatherCache,
-} from './lib/storage'
+} from "./lib/storage"
 import type {
   City,
   DashboardPreferences,
@@ -30,20 +30,20 @@ import type {
   WeatherEntry,
   WeatherSuccessState,
   WindSpeedUnit,
-} from './lib/types'
+} from "./lib/types"
 
-type MessageTone = 'info' | 'warning' | 'success'
+type MessageTone = "info" | "warning" | "success"
 
 const WEATHER_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 3
-const idleWeatherEntry: WeatherEntry = { status: 'idle' }
+const idleWeatherEntry: WeatherEntry = { status: "idle" }
 
 const savedCities = ref<City[]>([])
 const weatherByCity = ref<Record<string, WeatherEntry>>({})
 const weatherCache = ref<Record<string, StoredWeatherRecord>>({})
 const selectedCityKey = ref<string | null>(null)
 const preferences = ref<DashboardPreferences>({ ...defaultDashboardPreferences })
-const appMessage = ref('')
-const appMessageTone = ref<MessageTone>('info')
+const appMessage = ref("")
+const appMessageTone = ref<MessageTone>("info")
 const refreshingAll = ref(false)
 const locatingCurrentCity = ref(false)
 
@@ -52,9 +52,7 @@ const weatherControllers = new Map<string, AbortController>()
 const savedCityKeys = computed(() => savedCities.value.map((city) => getCityKey(city)))
 
 const selectedCity = computed(
-  () =>
-    savedCities.value.find((city) => getCityKey(city) === selectedCityKey.value) ??
-    null,
+  () => savedCities.value.find((city) => getCityKey(city) === selectedCityKey.value) ?? null,
 )
 
 const selectedWeather = computed(() => {
@@ -69,7 +67,7 @@ const weatherSuccessEntries = computed(() =>
   savedCities.value.flatMap((city) => {
     const weather = weatherByCity.value[getCityKey(city)]
 
-    if (weather?.status !== 'success') {
+    if (weather?.status !== "success") {
       return []
     }
 
@@ -83,41 +81,40 @@ const sortedCities = computed(() => {
   const sortMode = preferences.value.sortMode
 
   return cities.sort((leftCity, rightCity) => {
-    if (sortMode === 'alphabetical') {
+    if (sortMode === "alphabetical") {
       return leftCity.name.localeCompare(rightCity.name)
     }
 
-    if (sortMode === 'updated-desc') {
+    if (sortMode === "updated-desc") {
       const leftUpdated = getWeatherSuccess(leftCity)?.lastUpdated ?? 0
       const rightUpdated = getWeatherSuccess(rightCity)?.lastUpdated ?? 0
       return rightUpdated - leftUpdated
     }
 
-    if (sortMode === 'temperature-desc' || sortMode === 'temperature-asc') {
+    if (sortMode === "temperature-desc" || sortMode === "temperature-asc") {
       const leftTemperature = getWeatherSuccess(leftCity)?.current.temperature
       const rightTemperature = getWeatherSuccess(rightCity)?.current.temperature
 
       const normalizedLeft =
-        typeof leftTemperature === 'number'
+        typeof leftTemperature === "number"
           ? leftTemperature
-          : sortMode === 'temperature-desc'
+          : sortMode === "temperature-desc"
             ? Number.NEGATIVE_INFINITY
             : Number.POSITIVE_INFINITY
       const normalizedRight =
-        typeof rightTemperature === 'number'
+        typeof rightTemperature === "number"
           ? rightTemperature
-          : sortMode === 'temperature-desc'
+          : sortMode === "temperature-desc"
             ? Number.NEGATIVE_INFINITY
             : Number.POSITIVE_INFINITY
 
-      return sortMode === 'temperature-desc'
+      return sortMode === "temperature-desc"
         ? normalizedRight - normalizedLeft
         : normalizedLeft - normalizedRight
     }
 
     return (
-      (savedOrder.get(getCityKey(leftCity)) ?? 0) -
-      (savedOrder.get(getCityKey(rightCity)) ?? 0)
+      (savedOrder.get(getCityKey(leftCity)) ?? 0) - (savedOrder.get(getCityKey(rightCity)) ?? 0)
     )
   })
 })
@@ -178,14 +175,16 @@ const comparisonHighlights = computed(() => {
     if (wind > (windiest.weather.current.windSpeed ?? Number.NEGATIVE_INFINITY)) {
       windiest = entry
     }
-    if (rain > (rainiest.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY)) {
+    if (
+      rain > (rainiest.weather.daily[0]?.precipitationProbabilityMax ?? Number.NEGATIVE_INFINITY)
+    ) {
       rainiest = entry
     }
   }
 
   return [
     {
-      label: 'Warmest right now',
+      label: "Warmest right now",
       city: hottest.city.name,
       value: formatTemperature(
         hottest.weather.current.temperature,
@@ -193,7 +192,7 @@ const comparisonHighlights = computed(() => {
       ),
     },
     {
-      label: 'Coolest right now',
+      label: "Coolest right now",
       city: coolest.city.name,
       value: formatTemperature(
         coolest.weather.current.temperature,
@@ -201,15 +200,12 @@ const comparisonHighlights = computed(() => {
       ),
     },
     {
-      label: 'Strongest wind',
+      label: "Strongest wind",
       city: windiest.city.name,
-      value: formatWindSpeed(
-        windiest.weather.current.windSpeed,
-        preferences.value.windSpeedUnit,
-      ),
+      value: formatWindSpeed(windiest.weather.current.windSpeed, preferences.value.windSpeedUnit),
     },
     {
-      label: 'Highest rain chance',
+      label: "Highest rain chance",
       city: rainiest.city.name,
       value: formatPercent(rainiest.weather.daily[0]?.precipitationProbabilityMax ?? null),
     },
@@ -217,25 +213,25 @@ const comparisonHighlights = computed(() => {
 })
 
 const syncedCitiesCount = computed(
-  () => weatherSuccessEntries.value.filter(({ weather }) => weather.source === 'fresh').length,
+  () => weatherSuccessEntries.value.filter(({ weather }) => weather.source === "fresh").length,
 )
 
 function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError'
+  return error instanceof DOMException && error.name === "AbortError"
 }
 
 function getWeatherSuccess(city: City): WeatherSuccessState | null {
   const weather = weatherByCity.value[getCityKey(city)]
-  return weather?.status === 'success' ? weather : null
+  return weather?.status === "success" ? weather : null
 }
 
-function setMessage(message: string, tone: MessageTone = 'info'): void {
+function setMessage(message: string, tone: MessageTone = "info"): void {
   appMessage.value = message
   appMessageTone.value = tone
 }
 
 function clearMessage(): void {
-  appMessage.value = ''
+  appMessage.value = ""
 }
 
 function updateWeatherEntry(cityKey: string, nextState: WeatherEntry): void {
@@ -305,9 +301,9 @@ function hydrateWeatherFromCache(cities: City[]): void {
     }
 
     nextEntries[cityKey] = {
-      status: 'success',
+      status: "success",
       ...cachedWeather,
-      source: 'cached',
+      source: "cached",
     }
   }
 
@@ -325,14 +321,14 @@ async function loadWeatherForCity(
   weatherControllers.get(cityKey)?.abort()
   weatherControllers.set(cityKey, controller)
 
-  if (existingWeather?.status === 'success') {
+  if (existingWeather?.status === "success") {
     updateWeatherEntry(cityKey, {
       ...existingWeather,
       isRefreshing: true,
-      warning: '',
+      warning: "",
     })
   } else if (!options.background) {
-    updateWeatherEntry(cityKey, { status: 'loading' })
+    updateWeatherEntry(cityKey, { status: "loading" })
   }
 
   try {
@@ -347,10 +343,10 @@ async function loadWeatherForCity(
     }
 
     const successState: WeatherSuccessState = {
-      status: 'success',
+      status: "success",
       ...nextWeather,
       lastUpdated: Date.now(),
-      source: 'fresh',
+      source: "fresh",
     }
 
     updateWeatherEntry(cityKey, successState)
@@ -367,7 +363,7 @@ async function loadWeatherForCity(
     const message =
       error instanceof Error ? error.message : `Unable to load weather for ${city.name}.`
 
-    if (existingWeather?.status === 'success') {
+    if (existingWeather?.status === "success") {
       updateWeatherEntry(cityKey, {
         ...existingWeather,
         isRefreshing: false,
@@ -377,7 +373,7 @@ async function loadWeatherForCity(
     }
 
     updateWeatherEntry(cityKey, {
-      status: 'error',
+      status: "error",
       error: message,
     })
   } finally {
@@ -393,7 +389,7 @@ async function addCity(city: City): Promise<void> {
   const cityKey = getCityKey(city)
 
   if (hasSavedCity(cityKey)) {
-    setMessage(`${city.name} is already saved.`, 'warning')
+    setMessage(`${city.name} is already saved.`, "warning")
     return
   }
 
@@ -413,9 +409,7 @@ function removeCity(city: City): void {
   weatherControllers.get(cityKey)?.abort()
   weatherControllers.delete(cityKey)
 
-  savedCities.value = savedCities.value.filter(
-    (savedCity) => getCityKey(savedCity) !== cityKey,
-  )
+  savedCities.value = savedCities.value.filter((savedCity) => getCityKey(savedCity) !== cityKey)
   saveCities(savedCities.value)
   removeWeatherEntry(cityKey)
   removeWeatherRecord(cityKey)
@@ -425,7 +419,9 @@ function removeCity(city: City): void {
   }
 
   if (preferences.value.pinnedCityKey === cityKey) {
-    updatePreferences({ pinnedCityKey: savedCities.value[0] ? getCityKey(savedCities.value[0]) : null })
+    updatePreferences({
+      pinnedCityKey: savedCities.value[0] ? getCityKey(savedCities.value[0]) : null,
+    })
   }
 
   clearMessage()
@@ -485,8 +481,7 @@ function togglePinnedCity(city: City): void {
   const cityKey = getCityKey(city)
 
   updatePreferences({
-    pinnedCityKey:
-      preferences.value.pinnedCityKey === cityKey ? null : cityKey,
+    pinnedCityKey: preferences.value.pinnedCityKey === cityKey ? null : cityKey,
   })
 }
 
@@ -498,10 +493,12 @@ async function refreshAllCities(showMessage = false): Promise<void> {
   refreshingAll.value = true
 
   try {
-    await Promise.all(savedCities.value.map((city) => loadWeatherForCity(city, { background: true })))
+    await Promise.all(
+      savedCities.value.map((city) => loadWeatherForCity(city, { background: true })),
+    )
 
     if (showMessage) {
-      setMessage('Weather refreshed for all saved cities.', 'success')
+      setMessage("Weather refreshed for all saved cities.", "success")
     }
   } finally {
     refreshingAll.value = false
@@ -512,7 +509,7 @@ async function addCurrentLocation(): Promise<void> {
   clearMessage()
 
   if (!navigator.geolocation) {
-    setMessage('Geolocation is not supported in this browser.', 'warning')
+    setMessage("Geolocation is not supported in this browser.", "warning")
     return
   }
 
@@ -533,16 +530,15 @@ async function addCurrentLocation(): Promise<void> {
     )
 
     if (!currentCity) {
-      setMessage('Unable to resolve your current city.', 'warning')
+      setMessage("Unable to resolve your current city.", "warning")
       return
     }
 
     await addCity(currentCity)
-    setMessage(`${currentCity.name} added from your current location.`, 'success')
+    setMessage(`${currentCity.name} added from your current location.`, "success")
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Unable to use your current location.'
-    setMessage(message, 'warning')
+    const message = error instanceof Error ? error.message : "Unable to use your current location."
+    setMessage(message, "warning")
   } finally {
     locatingCurrentCity.value = false
   }
@@ -578,8 +574,8 @@ onMounted(() => {
         <p class="eyebrow">Frontend-only weather cockpit</p>
         <h1>Atmosphere Board</h1>
         <p class="masthead__text">
-          Track saved cities, compare conditions instantly, and keep a live weather
-          workspace that hydrates from cache before it refreshes.
+          Track saved cities, compare conditions instantly, and keep a live weather workspace that
+          hydrates from cache before it refreshes.
         </p>
 
         <div class="masthead__stats">
@@ -593,7 +589,7 @@ onMounted(() => {
           </div>
           <div>
             <span class="masthead__stat-label">Sort mode</span>
-            <strong>{{ preferences.sortMode.replace('-', ' ') }}</strong>
+            <strong>{{ preferences.sortMode.replace("-", " ") }}</strong>
           </div>
         </div>
       </div>
@@ -611,7 +607,9 @@ onMounted(() => {
             <span>Temperature</span>
             <select
               :value="preferences.temperatureUnit"
-              @change="setTemperatureUnit(($event.target as HTMLSelectElement).value as TemperatureUnit)"
+              @change="
+                setTemperatureUnit(($event.target as HTMLSelectElement).value as TemperatureUnit)
+              "
             >
               <option value="celsius">Celsius</option>
               <option value="fahrenheit">Fahrenheit</option>
@@ -622,7 +620,9 @@ onMounted(() => {
             <span>Wind</span>
             <select
               :value="preferences.windSpeedUnit"
-              @change="setWindSpeedUnit(($event.target as HTMLSelectElement).value as WindSpeedUnit)"
+              @change="
+                setWindSpeedUnit(($event.target as HTMLSelectElement).value as WindSpeedUnit)
+              "
             >
               <option value="kmh">km/h</option>
               <option value="mph">mph</option>
@@ -649,31 +649,24 @@ onMounted(() => {
             :disabled="savedCities.length === 0 || refreshingAll"
             @click="refreshAllCities(true)"
           >
-            {{ refreshingAll ? 'Refreshing…' : 'Refresh all' }}
+            {{ refreshingAll ? "Refreshing…" : "Refresh all" }}
           </button>
         </div>
 
-        <p
-          v-if="appMessage"
-          class="masthead__message"
-          :data-tone="appMessageTone"
-        >
+        <p v-if="appMessage" class="masthead__message" :data-tone="appMessageTone">
           {{ appMessage }}
         </p>
       </div>
     </header>
 
-    <section
-      v-if="primaryCity"
-      class="spotlight"
-    >
+    <section v-if="primaryCity" class="spotlight">
       <div class="spotlight__main">
         <div class="spotlight__header">
           <div>
             <p class="eyebrow">Pinned forecast</p>
             <h2>{{ primaryCity.name }}</h2>
             <p class="spotlight__location">
-              {{ primaryCity.admin1 ? `${primaryCity.admin1}, ` : '' }}{{ primaryCity.country }}
+              {{ primaryCity.admin1 ? `${primaryCity.admin1}, ` : "" }}{{ primaryCity.country }}
             </p>
           </div>
 
@@ -683,24 +676,21 @@ onMounted(() => {
               type="button"
               @click="togglePinnedCity(primaryCity)"
             >
-              {{ preferences.pinnedCityKey === getCityKey(primaryCity) ? 'Unpin' : 'Pin city' }}
+              {{ preferences.pinnedCityKey === getCityKey(primaryCity) ? "Unpin" : "Pin city" }}
             </button>
-            <button
-              class="spotlight__button"
-              type="button"
-              @click="openDetails(primaryCity)"
-            >
+            <button class="spotlight__button" type="button" @click="openDetails(primaryCity)">
               Open detail view
             </button>
           </div>
         </div>
 
-        <div
-          v-if="primaryWeather?.status === 'success'"
-          class="spotlight__body"
-        >
+        <div v-if="primaryWeather?.status === 'success'" class="spotlight__body">
           <div class="spotlight__temperature">
-            <p>{{ formatTemperature(primaryWeather.current.temperature, preferences.temperatureUnit) }}</p>
+            <p>
+              {{
+                formatTemperature(primaryWeather.current.temperature, preferences.temperatureUnit)
+              }}
+            </p>
             <span>{{ primaryWeather.current.condition }}</span>
           </div>
 
@@ -708,7 +698,12 @@ onMounted(() => {
             <div>
               <span>Feels like</span>
               <strong>
-                {{ formatTemperature(primaryWeather.current.apparentTemperature, preferences.temperatureUnit) }}
+                {{
+                  formatTemperature(
+                    primaryWeather.current.apparentTemperature,
+                    preferences.temperatureUnit,
+                  )
+                }}
               </strong>
             </div>
             <div>
@@ -723,15 +718,14 @@ onMounted(() => {
             </div>
             <div>
               <span>Today rain chance</span>
-              <strong>{{ formatPercent(primaryWeather.daily[0]?.precipitationProbabilityMax ?? null) }}</strong>
+              <strong>{{
+                formatPercent(primaryWeather.daily[0]?.precipitationProbabilityMax ?? null)
+              }}</strong>
             </div>
           </div>
 
           <div class="spotlight__signals">
-            <span
-              v-for="signal in getWeatherSignal(primaryWeather)"
-              :key="signal"
-            >
+            <span v-for="signal in getWeatherSignal(primaryWeather)" :key="signal">
               {{ signal }}
             </span>
           </div>
@@ -745,24 +739,14 @@ onMounted(() => {
           </p>
         </div>
 
-        <div
-          v-else-if="primaryWeather?.status === 'error'"
-          class="spotlight__fallback"
-        >
+        <div v-else-if="primaryWeather?.status === 'error'" class="spotlight__fallback">
           <p>{{ primaryWeather.error }}</p>
-          <button
-            class="spotlight__button"
-            type="button"
-            @click="retryCity(primaryCity)"
-          >
+          <button class="spotlight__button" type="button" @click="retryCity(primaryCity)">
             Retry city
           </button>
         </div>
 
-        <div
-          v-else
-          class="spotlight__fallback"
-        >
+        <div v-else class="spotlight__fallback">
           <p>Loading current conditions for {{ primaryCity.name }}.</p>
         </div>
       </div>
@@ -775,10 +759,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div
-          v-if="comparisonHighlights.length > 0"
-          class="comparison-list"
-        >
+        <div v-if="comparisonHighlights.length > 0" class="comparison-list">
           <article
             v-for="highlight in comparisonHighlights"
             :key="highlight.label"
@@ -790,12 +771,7 @@ onMounted(() => {
           </article>
         </div>
 
-        <p
-          v-else
-          class="comparison-list__empty"
-        >
-          Add a city to start comparing live conditions.
-        </p>
+        <p v-else class="comparison-list__empty">Add a city to start comparing live conditions.</p>
       </aside>
     </section>
 
@@ -803,29 +779,23 @@ onMounted(() => {
       <div class="section-header">
         <div>
           <p class="eyebrow">Weather board</p>
-          <h2>{{ secondaryCities.length > 0 ? 'Supporting cities' : 'Saved cities' }}</h2>
+          <h2>{{ secondaryCities.length > 0 ? "Supporting cities" : "Saved cities" }}</h2>
         </div>
 
         <span class="section-header__count">
-          {{ savedCities.length }} {{ savedCities.length === 1 ? 'city' : 'cities' }}
+          {{ savedCities.length }} {{ savedCities.length === 1 ? "city" : "cities" }}
         </span>
       </div>
 
-      <div
-        v-if="savedCities.length === 0"
-        class="empty-state"
-      >
+      <div v-if="savedCities.length === 0" class="empty-state">
         <p class="empty-state__title">No saved cities yet</p>
         <p class="empty-state__text">
-          Search for a city or use your current location to build a cached, refreshable
-          weather workspace.
+          Search for a city or use your current location to build a cached, refreshable weather
+          workspace.
         </p>
       </div>
 
-      <section
-        v-else-if="secondaryCities.length > 0"
-        class="city-grid"
-      >
+      <section v-else-if="secondaryCities.length > 0" class="city-grid">
         <SavedCityCard
           v-for="city in secondaryCities"
           :key="getCityKey(city)"
@@ -841,14 +811,9 @@ onMounted(() => {
         />
       </section>
 
-      <div
-        v-else
-        class="empty-state empty-state--compact"
-      >
+      <div v-else class="empty-state empty-state--compact">
         <p class="empty-state__title">Your pinned city is taking the full stage</p>
-        <p class="empty-state__text">
-          Save another city to compare conditions side by side.
-        </p>
+        <p class="empty-state__text">Save another city to compare conditions side by side.</p>
       </div>
     </main>
 

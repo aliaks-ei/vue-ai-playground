@@ -30,6 +30,7 @@ export const defaultDashboardPreferences: DashboardPreferences = {
   windSpeedUnit: "kmh",
   sortMode: "saved",
   pinnedCityKey: null,
+  showPinnedCityInGrid: false,
 }
 
 function loadJson(storageKey: string): unknown {
@@ -96,6 +97,10 @@ export function loadDashboardPreferences(): DashboardPreferences {
       : defaultDashboardPreferences.sortMode,
     pinnedCityKey:
       typeof rawPreferences.pinnedCityKey === "string" ? rawPreferences.pinnedCityKey : null,
+    showPinnedCityInGrid:
+      typeof rawPreferences.showPinnedCityInGrid === "boolean"
+        ? rawPreferences.showPinnedCityInGrid
+        : defaultDashboardPreferences.showPinnedCityInGrid,
   }
 }
 

@@ -31,6 +31,7 @@ function mockPreferences(overrides: Partial<DashboardPreferences> = {}): Dashboa
     windSpeedUnit: "mph",
     sortMode: "updated-desc",
     pinnedCityKey: "42",
+    showPinnedCityInGrid: true,
     ...overrides,
   }
 }
@@ -118,10 +119,25 @@ describe("saveDashboardPreferences + loadDashboardPreferences", () => {
         windSpeedUnit: "knots",
         sortMode: "random",
         pinnedCityKey: 1,
+        showPinnedCityInGrid: "yes",
       }),
     )
 
     expect(loadDashboardPreferences()).toEqual(defaultDashboardPreferences)
+  })
+
+  it("falls back to the default pinned visibility flag for older stored preferences", () => {
+    localStorage.setItem(
+      "saved-cities-weather-dashboard:preferences",
+      JSON.stringify({
+        temperatureUnit: "fahrenheit",
+        windSpeedUnit: "mph",
+        sortMode: "updated-desc",
+        pinnedCityKey: "42",
+      }),
+    )
+
+    expect(loadDashboardPreferences()).toEqual(mockPreferences({ showPinnedCityInGrid: false }))
   })
 })
 

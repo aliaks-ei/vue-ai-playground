@@ -25,8 +25,14 @@ import type {
 } from "./lib/types"
 
 const { appMessage, appMessageTone, setMessage, clearMessage } = useAppMessage()
-const { preferences, updatePreferences, loadPreferences, setSortMode, togglePinnedCity } =
-  usePreferences()
+const {
+  preferences,
+  updatePreferences,
+  loadPreferences,
+  setSortMode,
+  setShowPinnedCityInGrid,
+  togglePinnedCity,
+} = usePreferences()
 const {
   savedCities,
   savedCityKeys,
@@ -133,13 +139,25 @@ const primaryWeather = computed(() => {
   return getWeatherEntry(primaryCity.value)
 })
 
-const secondaryCities = computed(() => {
+const boardCities = computed(() => {
   if (!primaryCity.value) {
+    return sortedCities.value
+  }
+
+  if (preferences.value.showPinnedCityInGrid) {
     return sortedCities.value
   }
 
   const primaryKey = getCityKey(primaryCity.value)
   return sortedCities.value.filter((city) => getCityKey(city) !== primaryKey)
+})
+
+const boardTitle = computed(() => {
+  if (!primaryCity.value || preferences.value.showPinnedCityInGrid) {
+    return "Saved cities"
+  }
+
+  return boardCities.value.length > 0 ? "Supporting cities" : "Saved cities"
 })
 
 const comparisonHighlights = computed(() => {
@@ -273,6 +291,11 @@ function setWindSpeedUnit(unit: WindSpeedUnit): void {
   if (preferences.value.windSpeedUnit === unit) return
   updatePreferences({ windSpeedUnit: unit })
   void refreshAllCities()
+}
+
+function togglePinnedCityVisibility(event: Event): void {
+  const nextValue = (event.target as HTMLInputElement).checked
+  setShowPinnedCityInGrid(nextValue)
 }
 
 async function handleRefreshAll(): Promise<void> {
@@ -415,6 +438,15 @@ onMounted(() => {
             </select>
           </label>
 
+          <label class="toolbar__toggle" data-test="show-pinned-toggle">
+            <input
+              type="checkbox"
+              :checked="preferences.showPinnedCityInGrid"
+              @change="togglePinnedCityVisibility"
+            />
+            <span>Keep pinned city in board</span>
+          </label>
+
           <button
             class="toolbar__refresh"
             type="button"
@@ -551,7 +583,7 @@ onMounted(() => {
       <div class="section-header">
         <div>
           <p class="eyebrow">Weather board</p>
-          <h2>{{ secondaryCities.length > 0 ? "Supporting cities" : "Saved cities" }}</h2>
+          <h2>{{ boardTitle }}</h2>
         </div>
 
         <span class="section-header__count">
@@ -567,9 +599,9 @@ onMounted(() => {
         </p>
       </div>
 
-      <section v-else-if="secondaryCities.length > 0" class="city-grid">
+      <section v-else-if="boardCities.length > 0" class="city-grid">
         <SavedCityCard
-          v-for="city in secondaryCities"
+          v-for="city in boardCities"
           :key="getCityKey(city)"
           :city="city"
           :weather="getWeatherEntry(city)"
@@ -585,7 +617,10 @@ onMounted(() => {
 
       <div v-else class="empty-state empty-state--compact">
         <p class="empty-state__title">Your pinned city is taking the full stage</p>
-        <p class="empty-state__text">Save another city to compare conditions side by side.</p>
+        <p class="empty-state__text">
+          Save another city to compare conditions side by side, or keep the pinned city visible in
+          the board from the toolbar.
+        </p>
       </div>
     </main>
 

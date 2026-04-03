@@ -22,6 +22,7 @@ const validSortModes: SortMode[] = [
   "temperature-desc",
   "temperature-asc",
   "updated-desc",
+  "weather-desc",
 ]
 
 export const defaultDashboardPreferences: DashboardPreferences = {

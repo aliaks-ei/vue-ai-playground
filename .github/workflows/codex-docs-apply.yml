@@ -165,9 +165,9 @@ jobs:
           safety-strategy: drop-sudo
           sandbox: workspace-write
 
-      - name: Remove Codex apply context
+      - name: Remove Codex apply artifacts
         if: steps.context.outputs.ready == 'true'
-        run: rm -rf .codex-docs-apply
+        run: rm -rf .codex-docs-apply .codex
 
       - name: Validate docs-only changes
         if: steps.context.outputs.ready == 'true' && steps.run_codex.outcome == 'success'
@@ -175,24 +175,33 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          changed_files="$(git status --porcelain | awk '{print $2}')"
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
 
-          if [[ -n "$changed_files" ]]; then
-            while IFS= read -r file; do
-              [[ -z "$file" ]] && continue
+            case "$file" in
+              AGENTS.md|agent_docs/*)
+                ;;
+              *)
+                echo "Restoring tracked non-docs file: $file"
+                git restore --source=HEAD --staged --worktree -- "$file"
+                ;;
+            esac
+          done < <(git diff --name-only HEAD)
 
-              case "$file" in
-                AGENTS.md|agent_docs/*)
-                  ;;
-                *)
-                  echo "Restoring non-docs file: $file"
-                  git restore -- "$file"
-                  ;;
-              esac
-            done <<< "$changed_files"
-          fi
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
 
-          docs_changed="$(git status --porcelain | awk '{print $2}')"
+            case "$file" in
+              AGENTS.md|agent_docs/*)
+                ;;
+              *)
+                echo "Removing untracked non-docs path: $file"
+                rm -rf -- "$file"
+                ;;
+            esac
+          done < <(git ls-files --others --exclude-standard)
+
+          docs_changed="$(git status --porcelain -- AGENTS.md agent_docs)"
 
           if [[ -z "$docs_changed" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -242,6 +251,8 @@ jobs:
             summary="$STATUS_MESSAGE"
           elif [[ "$RUN_CODEX_OUTCOME" != "success" ]]; then
             summary='Codex did not complete the docs-apply run. Check the workflow logs for details.'
+          elif [[ "$VALIDATE_OUTCOME" != "success" ]]; then
+            summary='Codex produced output, but the docs-only validation step failed. Check the workflow logs for details.'
           elif [[ "$CHANGED" == "true" && -n "$COMMIT_SHA" ]]; then
             short_sha="${COMMIT_SHA:0:7}"
             summary="Applied docs updates to \`$HEAD_REF\` in \`$short_sha\`."

@@ -37,7 +37,6 @@ const {
 } = useSavedCities()
 const {
   weatherByCity,
-  weatherSuccessEntries,
   syncedCitiesCount,
   refreshingAll,
   getWeatherEntry,

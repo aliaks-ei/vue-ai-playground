@@ -29,6 +29,7 @@ export interface DashboardPreferences {
   windSpeedUnit: WindSpeedUnit
   sortMode: SortMode
   pinnedCityKey: string | null
+  showPinnedCityInGrid: boolean
 }
 
 export interface CurrentWeather {

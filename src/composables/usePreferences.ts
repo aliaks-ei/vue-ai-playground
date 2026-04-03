@@ -23,6 +23,10 @@ export function usePreferences() {
     updatePreferences({ sortMode })
   }
 
+  function setShowPinnedCityInGrid(showPinnedCityInGrid: boolean): void {
+    updatePreferences({ showPinnedCityInGrid })
+  }
+
   function togglePinnedCity(city: City): void {
     const cityKey = getCityKey(city)
     updatePreferences({
@@ -30,5 +34,12 @@ export function usePreferences() {
     })
   }
 
-  return { preferences, updatePreferences, loadPreferences, setSortMode, togglePinnedCity }
+  return {
+    preferences,
+    updatePreferences,
+    loadPreferences,
+    setSortMode,
+    setShowPinnedCityInGrid,
+    togglePinnedCity,
+  }
 }

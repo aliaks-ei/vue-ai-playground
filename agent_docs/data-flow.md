@@ -60,6 +60,7 @@ Current-location add follows the same path after browser geolocation and reverse
 - Changing temperature or wind units updates preferences first, then triggers a bulk refresh.
 - Sort-mode changes update preferences only; they do not refetch weather.
 - Pinning changes preferences only; it does not alter city order in storage.
+- Toggling pinned-city board visibility (`showPinnedCityInGrid`) updates preferences and board rendering only; it does not refetch weather.
 
 ## Removal And Drawer Selection
 

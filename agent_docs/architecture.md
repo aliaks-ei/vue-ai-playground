@@ -11,7 +11,7 @@ Business logic lives in `src/composables/`. `src/App.vue` is the orchestration l
 Composables own:
 
 - `useWeather` — in-memory weather state, cache hydration, fetch lifecycle, abort controller management
-- `usePreferences` — dashboard preferences (temperature unit, wind unit, sort mode, pinned city)
+- `usePreferences` — dashboard preferences (temperature unit, wind unit, sort mode, pinned city, pinned-city board visibility)
 - `useSavedCities` — saved city list and `localStorage` persistence
 - `useAppMessage` — transient status message state
 

@@ -53,8 +53,9 @@ Accepted values are intentionally narrow:
 - wind speed unit: `kmh | mph`
 - sort mode: `saved | alphabetical | temperature-desc | temperature-asc | updated-desc`
 - pinned city key: `string | null`
+- show pinned city in grid: `boolean` (default `false`)
 
-Unknown values are ignored in favor of defaults.
+Unknown values are ignored in favor of defaults. If older stored preferences do not include `showPinnedCityInGrid`, it falls back to `false`.
 
 ## Boundary With App Logic
 
